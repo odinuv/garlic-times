@@ -427,35 +427,38 @@ function FrontPage() {
           <CompactRatesBox />
         </div>
 
-        {/* Secondary article — mobile order 3; desktop col 3 row 1 */}
-        <div className="order-3 md:order-none md:col-start-3 md:row-start-1">
+        {/* Full rates — desktop only; sits at the top of the right column, before the secondary article */}
+        <div className="order-5 hidden md:order-none md:col-start-3 md:row-start-1 md:block">
+          <FullRatesBox />
+        </div>
+
+        {/* Secondary article — mobile order 3; desktop col 3 row 2 (below full rates) */}
+        <div className="order-3 md:order-none md:col-start-3 md:row-start-2">
           {secondaryArticle}
         </div>
 
         {/* Advert — mobile order 4 (between secondary and the rest);
-            desktop in the footer row (col 3, row 3) */}
+            desktop bottom of the right column (col 3, row 3) */}
         <div className="order-4 md:order-none md:col-start-3 md:row-start-3">
           <AdvertBox />
         </div>
 
-        {/* Three text articles — desktop row 2, one per column */}
-        <div className="order-5 md:order-none md:col-start-1 md:row-start-2">
+        {/* Three text articles — desktop row 2 cols 1-2 and row 3 col 1 */}
+        <div className="order-6 md:order-none md:col-start-1 md:row-start-2">
           {article3}
         </div>
-        <div className="order-6 md:order-none md:col-start-2 md:row-start-2">
+        <div className="order-7 md:order-none md:col-start-2 md:row-start-2">
           {article4}
         </div>
-        <div className="order-7 md:order-none md:col-start-3 md:row-start-2">
+        <div className="order-8 md:order-none md:col-start-1 md:row-start-3">
           {article5}
         </div>
 
-        {/* Recipe — mobile order 8 (last); desktop footer row col 1 */}
-        <div className="order-8 md:order-none md:col-start-1 md:row-start-3">
+        {/* Recipe — mobile order 9 (last); desktop row 3 col 2 */}
+        <div className="order-9 md:order-none md:col-start-2 md:row-start-3">
           <RecipeBox />
         </div>
-
-        {/* Full rates — desktop only, footer row col 2 */}
-        <div className="hidden md:block md:col-start-2 md:row-start-3">
+      </section>
           <FullRatesBox />
         </div>
       </section>
