@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: FrontPage;
+  component: FrontPage,
 });
 
 function Rule({ thick = false }: { thick?: boolean }) {
