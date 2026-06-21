@@ -178,16 +178,14 @@ function FullRatesBox() {
           </tr>
         </thead>
         <tbody className="[&_tr]:border-b [&_tr]:border-ink/30 [&_td]:py-1.5">
-          <tr>
-            <td>U.S. Dollar</td>
-            <td className="text-right tabular-nums">2.8012</td>
-            <td className="text-right tabular-nums">+0.0004</td>
-          </tr>
-          <tr className="!border-0">
-            <td>Swiss Franc</td>
-            <td className="text-right tabular-nums">12.10</td>
-            <td className="text-right tabular-nums">−0.01</td>
-          </tr>
+          <tr><td>U.S. Dollar</td><td className="text-right tabular-nums">2.8012</td><td className="text-right tabular-nums">+0.0004</td></tr>
+          <tr><td>Canadian Dollar</td><td className="text-right tabular-nums">3.0254</td><td className="text-right tabular-nums">−0.0011</td></tr>
+          <tr><td>French Franc</td><td className="text-right tabular-nums">13.74</td><td className="text-right tabular-nums">+0.02</td></tr>
+          <tr><td>Deutsche Mark</td><td className="text-right tabular-nums">11.18</td><td className="text-right tabular-nums">unch.</td></tr>
+          <tr><td>Swiss Franc</td><td className="text-right tabular-nums">12.10</td><td className="text-right tabular-nums">−0.01</td></tr>
+          <tr><td>Italian Lira</td><td className="text-right tabular-nums">1,738</td><td className="text-right tabular-nums">+3</td></tr>
+          <tr><td>Dutch Guilder</td><td className="text-right tabular-nums">10.11</td><td className="text-right tabular-nums">+0.01</td></tr>
+          <tr className="!border-0"><td>Gold (fine oz.)</td><td className="text-right tabular-nums">£12 9s.</td><td className="text-right tabular-nums">+1s.</td></tr>
         </tbody>
       </table>
     </article>
@@ -427,36 +425,36 @@ function FrontPage() {
           <CompactRatesBox />
         </div>
 
-        {/* Full rates — desktop only; sits at the top of the right column, before the secondary article */}
-        <div className="order-5 hidden md:order-none md:col-start-3 md:row-start-1 md:block">
-          <FullRatesBox />
-        </div>
-
-        {/* Secondary article — mobile order 3; desktop col 3 row 2 (below full rates) */}
-        <div className="order-3 md:order-none md:col-start-3 md:row-start-2">
+        {/* Secondary article — mobile order 3; desktop col 3 row 1 */}
+        <div className="order-3 md:order-none md:col-start-3 md:row-start-1">
           {secondaryArticle}
         </div>
 
         {/* Advert — mobile order 4 (between secondary and the rest);
-            desktop bottom of the right column (col 3, row 3) */}
+            desktop in the footer row (col 3, row 3) */}
         <div className="order-4 md:order-none md:col-start-3 md:row-start-3">
           <AdvertBox />
         </div>
 
-        {/* Three text articles — desktop row 2 cols 1-2 and row 3 col 1 */}
-        <div className="order-6 md:order-none md:col-start-1 md:row-start-2">
+        {/* Three text articles — desktop row 2, one per column */}
+        <div className="order-5 md:order-none md:col-start-1 md:row-start-2">
           {article3}
         </div>
-        <div className="order-7 md:order-none md:col-start-2 md:row-start-2">
+        <div className="order-6 md:order-none md:col-start-2 md:row-start-2">
           {article4}
         </div>
-        <div className="order-8 md:order-none md:col-start-1 md:row-start-3">
+        <div className="order-7 md:order-none md:col-start-3 md:row-start-2">
           {article5}
         </div>
 
-        {/* Recipe — mobile order 9 (last); desktop row 3 col 2 */}
-        <div className="order-9 md:order-none md:col-start-2 md:row-start-3">
+        {/* Recipe — mobile order 8 (last); desktop footer row col 1 */}
+        <div className="order-8 md:order-none md:col-start-1 md:row-start-3">
           <RecipeBox />
+        </div>
+
+        {/* Full rates — desktop only, footer row col 2 */}
+        <div className="hidden md:block md:col-start-2 md:row-start-3">
+          <FullRatesBox />
         </div>
       </section>
 
