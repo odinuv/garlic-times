@@ -193,7 +193,6 @@ function FullRatesBox() {
     </article>
   );
 }
-}
 
 function CompactRatesBox() {
   return (
