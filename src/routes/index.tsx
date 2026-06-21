@@ -178,18 +178,21 @@ function FullRatesBox() {
           </tr>
         </thead>
         <tbody className="[&_tr]:border-b [&_tr]:border-ink/30 [&_td]:py-1.5">
-          <tr><td>U.S. Dollar</td><td className="text-right tabular-nums">2.8012</td><td className="text-right tabular-nums">+0.0004</td></tr>
-          <tr><td>Canadian Dollar</td><td className="text-right tabular-nums">3.0254</td><td className="text-right tabular-nums">−0.0011</td></tr>
-          <tr><td>French Franc</td><td className="text-right tabular-nums">13.74</td><td className="text-right tabular-nums">+0.02</td></tr>
-          <tr><td>Deutsche Mark</td><td className="text-right tabular-nums">11.18</td><td className="text-right tabular-nums">unch.</td></tr>
-          <tr><td>Swiss Franc</td><td className="text-right tabular-nums">12.10</td><td className="text-right tabular-nums">−0.01</td></tr>
-          <tr><td>Italian Lira</td><td className="text-right tabular-nums">1,738</td><td className="text-right tabular-nums">+3</td></tr>
-          <tr><td>Dutch Guilder</td><td className="text-right tabular-nums">10.11</td><td className="text-right tabular-nums">+0.01</td></tr>
-          <tr className="!border-0"><td>Gold (fine oz.)</td><td className="text-right tabular-nums">£12 9s.</td><td className="text-right tabular-nums">+1s.</td></tr>
+          <tr>
+            <td>U.S. Dollar</td>
+            <td className="text-right tabular-nums">2.8012</td>
+            <td className="text-right tabular-nums">+0.0004</td>
+          </tr>
+          <tr className="!border-0">
+            <td>Swiss Franc</td>
+            <td className="text-right tabular-nums">12.10</td>
+            <td className="text-right tabular-nums">−0.01</td>
+          </tr>
         </tbody>
       </table>
     </article>
   );
+}
 }
 
 function CompactRatesBox() {
