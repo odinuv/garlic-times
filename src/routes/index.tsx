@@ -459,9 +459,6 @@ function FrontPage() {
           <RecipeBox />
         </div>
       </section>
-          <FullRatesBox />
-        </div>
-      </section>
 
       <Rule thick />
       <footer className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
