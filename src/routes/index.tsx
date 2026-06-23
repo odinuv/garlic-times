@@ -149,48 +149,6 @@ function RecipeBox() {
   );
 }
 
-function FullRatesBox() {
-  return (
-    <article className="border border-ink p-4">
-      <p className="text-center text-[11px] uppercase tracking-[0.25em]">
-        Foreign Exchanges
-      </p>
-      <Rule />
-      <h3 className="text-center font-serif text-2xl font-bold leading-tight">
-        Sterling Closing Rates
-      </h3>
-      <p className="mb-2 text-center text-[11px] italic">
-        Yesterday's middle market quotations in London.
-      </p>
-      <Rule />
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="border-b border-ink text-left">
-            <th className="py-1 font-normal uppercase tracking-wider text-[10px]">
-              Currency
-            </th>
-            <th className="py-1 text-right font-normal uppercase tracking-wider text-[10px]">
-              Per £1
-            </th>
-            <th className="py-1 text-right font-normal uppercase tracking-wider text-[10px]">
-              Change
-            </th>
-          </tr>
-        </thead>
-        <tbody className="[&_tr]:border-b [&_tr]:border-ink/30 [&_td]:py-1.5">
-          <tr><td>U.S. Dollar</td><td className="text-right tabular-nums">2.8012</td><td className="text-right tabular-nums">+0.0004</td></tr>
-          <tr><td>Canadian Dollar</td><td className="text-right tabular-nums">3.0254</td><td className="text-right tabular-nums">−0.0011</td></tr>
-          <tr><td>French Franc</td><td className="text-right tabular-nums">13.74</td><td className="text-right tabular-nums">+0.02</td></tr>
-          <tr><td>Deutsche Mark</td><td className="text-right tabular-nums">11.18</td><td className="text-right tabular-nums">unch.</td></tr>
-          <tr><td>Swiss Franc</td><td className="text-right tabular-nums">12.10</td><td className="text-right tabular-nums">−0.01</td></tr>
-          <tr><td>Italian Lira</td><td className="text-right tabular-nums">1,738</td><td className="text-right tabular-nums">+3</td></tr>
-          <tr><td>Dutch Guilder</td><td className="text-right tabular-nums">10.11</td><td className="text-right tabular-nums">+0.01</td></tr>
-          <tr className="!border-0"><td>Gold (fine oz.)</td><td className="text-right tabular-nums">£12 9s.</td><td className="text-right tabular-nums">+1s.</td></tr>
-        </tbody>
-      </table>
-    </article>
-  );
-}
 
 function CompactRatesBox() {
   return (
@@ -413,49 +371,15 @@ function FrontPage() {
         <Rule thick />
       </header>
 
-      {/* Main grid: flex column on mobile (with custom order), 3-col grid on md+ */}
-      <section className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-x-8 md:gap-y-6">
-        {/* Main article — mobile order 1; desktop spans 2 cols on row 1 */}
-        <div className="order-1 md:order-none md:col-span-2 md:row-start-1">
-          {mainArticle}
-        </div>
-
-        {/* Compact rates — mobile only, order 2 */}
-        <div className="order-2 md:hidden">
-          <CompactRatesBox />
-        </div>
-
-        {/* Secondary article — mobile order 3; desktop col 3 row 1 */}
-        <div className="order-3 md:order-none md:col-start-3 md:row-start-1">
-          {secondaryArticle}
-        </div>
-
-        {/* Advert — mobile order 4 (between secondary and the rest);
-            desktop in the footer row (col 3, row 3) */}
-        <div className="order-4 md:order-none md:col-start-3 md:row-start-3">
-          <AdvertBox />
-        </div>
-
-        {/* Three text articles — desktop row 2, one per column */}
-        <div className="order-5 md:order-none md:col-start-1 md:row-start-2">
-          {article3}
-        </div>
-        <div className="order-6 md:order-none md:col-start-2 md:row-start-2">
-          {article4}
-        </div>
-        <div className="order-7 md:order-none md:col-start-3 md:row-start-2">
-          {article5}
-        </div>
-
-        {/* Recipe — mobile order 8 (last); desktop footer row col 1 */}
-        <div className="order-8 md:order-none md:col-start-1 md:row-start-3">
-          <RecipeBox />
-        </div>
-
-        {/* Full rates — desktop only, footer row col 2 */}
-        <div className="hidden md:block md:col-start-2 md:row-start-3">
-          <FullRatesBox />
-        </div>
+      <section className="flex flex-col gap-6">
+        {mainArticle}
+        <CompactRatesBox />
+        {secondaryArticle}
+        <AdvertBox />
+        {article3}
+        {article4}
+        {article5}
+        <RecipeBox />
       </section>
 
       <Rule thick />
