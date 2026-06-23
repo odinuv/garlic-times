@@ -371,7 +371,7 @@ function FrontPage() {
         <Rule thick />
       </header>
 
-      <section className="flex flex-col gap-6">
+      <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:break-inside-avoid [&>*]:mb-6">
         {mainArticle}
         <CompactRatesBox />
         {secondaryArticle}
