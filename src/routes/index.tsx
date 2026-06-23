@@ -149,48 +149,6 @@ function RecipeBox() {
   );
 }
 
-function FullRatesBox() {
-  return (
-    <article className="border border-ink p-4">
-      <p className="text-center text-[11px] uppercase tracking-[0.25em]">
-        Foreign Exchanges
-      </p>
-      <Rule />
-      <h3 className="text-center font-serif text-2xl font-bold leading-tight">
-        Sterling Closing Rates
-      </h3>
-      <p className="mb-2 text-center text-[11px] italic">
-        Yesterday's middle market quotations in London.
-      </p>
-      <Rule />
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="border-b border-ink text-left">
-            <th className="py-1 font-normal uppercase tracking-wider text-[10px]">
-              Currency
-            </th>
-            <th className="py-1 text-right font-normal uppercase tracking-wider text-[10px]">
-              Per £1
-            </th>
-            <th className="py-1 text-right font-normal uppercase tracking-wider text-[10px]">
-              Change
-            </th>
-          </tr>
-        </thead>
-        <tbody className="[&_tr]:border-b [&_tr]:border-ink/30 [&_td]:py-1.5">
-          <tr><td>U.S. Dollar</td><td className="text-right tabular-nums">2.8012</td><td className="text-right tabular-nums">+0.0004</td></tr>
-          <tr><td>Canadian Dollar</td><td className="text-right tabular-nums">3.0254</td><td className="text-right tabular-nums">−0.0011</td></tr>
-          <tr><td>French Franc</td><td className="text-right tabular-nums">13.74</td><td className="text-right tabular-nums">+0.02</td></tr>
-          <tr><td>Deutsche Mark</td><td className="text-right tabular-nums">11.18</td><td className="text-right tabular-nums">unch.</td></tr>
-          <tr><td>Swiss Franc</td><td className="text-right tabular-nums">12.10</td><td className="text-right tabular-nums">−0.01</td></tr>
-          <tr><td>Italian Lira</td><td className="text-right tabular-nums">1,738</td><td className="text-right tabular-nums">+3</td></tr>
-          <tr><td>Dutch Guilder</td><td className="text-right tabular-nums">10.11</td><td className="text-right tabular-nums">+0.01</td></tr>
-          <tr className="!border-0"><td>Gold (fine oz.)</td><td className="text-right tabular-nums">£12 9s.</td><td className="text-right tabular-nums">+1s.</td></tr>
-        </tbody>
-      </table>
-    </article>
-  );
-}
 
 function CompactRatesBox() {
   return (
