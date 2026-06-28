@@ -20,6 +20,13 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Superpowers specs/plans + SDD scratch (kept local, not tracked)
+docs/superpowers/
+.superpowers/
+
+# Local scratch / source material
+tmp-src/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
