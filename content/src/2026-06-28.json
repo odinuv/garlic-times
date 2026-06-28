@@ -1,0 +1,104 @@
+{
+  "date": "2026-06-28",
+  "displayDate": "Friday October 3, 1962",
+  "editionNo": "No. 58,419",
+  "price": "Price 6d.",
+  "strapline": "London · Friday October 3, 1962 · Sixteen Pages",
+  "masthead": {
+    "the": "The",
+    "middle": "Garlic",
+    "end": "Times",
+    "glyph": "/static/coat-of-arms.png"
+  },
+  "meta": {
+    "title": "The Garlic Times — Friday October 3, 1962",
+    "description": "The Garlic Times — front page edition. Cabinet talks, railway negotiations, foreign affairs, and the daily recipe."
+  },
+  "articles": [
+    {
+      "title": "Cabinet talks resume as ministers seek to break impasse",
+      "byline": "From our Political Correspondent",
+      "size": "xl",
+      "columns": 2,
+      "image": {
+        "src": "/img/main-photo.jpg",
+        "alt": "Ministers leaving Downing Street",
+        "caption": "The Prime Minister and senior colleagues departing No. 10 after yesterday's prolonged session."
+      },
+      "body": [
+        "After a meeting which lasted into the small hours, the Cabinet reassembled in Downing Street yesterday morning to consider afresh the terms upon which Her Majesty's Government may proceed with the measures outlined in last week's communique. Ministers, it is understood, remain divided upon the question of timing, though there is now broad acceptance of the principle.",
+        "The Lord Privy Seal, speaking afterwards to representatives of the Press at the door of the Cabinet Office, said only that \"considerable progress\" had been made and that he hoped a further statement might be issued before the House rises for the weekend recess. Backbench opinion in the Government party is reported to have hardened against any further delay, and the Whips' Office has been busy throughout the day.",
+        "In the City the response was cautiously favourable. Sterling held firm against the dollar at the close, and gilt-edged stocks were marked a shade higher in late dealings. Industrial shares, however, showed little change on balance, dealers preferring to await the promised ministerial statement before committing themselves.",
+        "Our Diplomatic Correspondent writes: It is not expected that the proposals, when announced, will materially affect the discussions now in progress at Geneva, where the British delegation has already indicated its willingness to consider a wider range of options than had at first appeared probable."
+      ]
+    },
+    {
+      "title": "Beeching and Greene try afresh for a railway peace",
+      "byline": "By Ian Coulter, Industrial Correspondent",
+      "size": "lg",
+      "columns": 1,
+      "image": {
+        "src": "/img/secondary-photo.jpg",
+        "alt": "Locomotive at terminus",
+        "caption": "A morning express prepared for departure at Paddington."
+      },
+      "body": [
+        "A renewed effort by Dr Beeching, chairman of the Transport Commission, and Mr Sidney Greene, general secretary of the National Union of Railwaymen, to find a basis for the settlement of the long dispute over wages and manning is to begin in London next Tuesday.",
+        "Both sides have intimated, in carefully worded statements, that they approach the meeting \"in a constructive spirit.\" Few in the industry doubt, however, that the road to agreement will be long, and that the question of branch-line closures must sooner or later be reckoned with.",
+        "Mr Greene is understood to be under pressure from a section of his executive to insist upon firm assurances on redundancy before any wages formula is accepted."
+      ]
+    },
+    {
+      "title": "Berlin mercy team turned back at the wire",
+      "byline": "From our Correspondent in Berlin",
+      "size": "md",
+      "columns": 1,
+      "body": [
+        "A British Army ambulance bound for the French sector with two cases of acute appendicitis was halted at Friedrichstrasse last night by officers of the People's Police and obliged to return the way it had come. No reason was given by the East German authorities.",
+        "The incident is the third in a fortnight in which routine medical traffic between the western sectors has been impeded. The Allied commandants have lodged a formal protest with the Soviet commandant and are understood to be considering further measures."
+      ]
+    },
+    {
+      "title": "Premier hits back at the critics of the Six",
+      "byline": "By James Margach, Political Correspondent",
+      "size": "md",
+      "columns": 1,
+      "body": [
+        "Mr Macmillan personally entered the Common Market debate yesterday with a vigorous defence of the Government's negotiating posture in Brussels. Speaking to a private meeting of Conservative backbenchers, he is reported to have urged the party to \"hold its nerve\" and to allow the negotiators \"the room they need.\"",
+        "His remarks, though not for publication, were widely circulated in the Lobby within the hour. They are understood to have been prompted by a series of critical leading articles in the provincial Press."
+      ]
+    },
+    {
+      "title": "Photographs saved by a gift of £32,000",
+      "byline": "From our Arts Reporter",
+      "size": "md",
+      "columns": 1,
+      "body": [
+        "The collection of nineteenth-century photographs assembled by the late Sir Albert Kahn, the threatened dispersal of which was reported in these columns last month, has been saved for the nation by an anonymous benefaction of £32,000.",
+        "The Trustees of the National Portrait Gallery announced last night that the entire collection — some two thousand prints and an equivalent number of glass plates — would be accessible to scholars from the New Year."
+      ]
+    }
+  ],
+  "rates": {
+    "title": "Foreign Exchanges — £1 buys",
+    "rows": [
+      { "label": "U.S. Dollar", "value": "2.8012", "delta": "+0.0004" },
+      { "label": "Swiss Franc", "value": "12.10", "delta": "−0.01" }
+    ]
+  },
+  "recipe": {
+    "kicker": "From the Kitchen — Recipe of the Day",
+    "title": "Steak & Kidney Pudding",
+    "meta": "Serves four. Preparation, half an hour; cooking, four hours.",
+    "body": [
+      "**Suet crust:** 8 oz self-raising flour, 4 oz beef suet, a pinch of salt, cold water to mix.",
+      "**Filling:** 1 lb chuck steak, 6 oz ox kidney, 1 small onion finely chopped, 1 tablespoonful seasoned flour, ½ pint cold beef stock, a dash of Worcestershire sauce.",
+      "Sift the flour with the salt, stir in the suet and bind with water to a soft dough. Line a buttered two-pint basin, reserving a third for the lid. Toss the meat in seasoned flour, fill the basin, moisten with stock, cover with the pastry lid and seal well. Tie with a buttered paper and a floured cloth and steam steadily for four hours, replenishing the water as required."
+    ]
+  },
+  "advert": {
+    "src": "/img/advert.jpg",
+    "alt": "An advertisement for a fine wristwatch",
+    "caption": "\"The watch that does not tire.\" — By appointment to discerning gentlemen since 1905. Enquiries to your usual jeweller."
+  }
+}
