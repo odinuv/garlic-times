@@ -69,7 +69,9 @@ export function copyAssets(contentDir: string, outDir: string): void {
 }
 
 export async function compileCss(inputCss: string, outCss: string): Promise<void> {
-  const proc = Bun.spawn(["bunx", "@tailwindcss/cli", "-i", inputCss, "-o", outCss, "--minify"], {
+  // Use Bun.argv[0] so this works regardless of whether bun is on PATH
+  const bunBin = Bun.argv[0];
+  const proc = Bun.spawn([bunBin, "x", "@tailwindcss/cli", "-i", inputCss, "-o", outCss, "--minify"], {
     stdout: "inherit",
     stderr: "inherit",
   });
