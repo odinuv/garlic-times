@@ -7,7 +7,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "generate": "bun run scripts/generate.ts",
-    "generate:watch": "bun --watch scripts/generate.ts"
+    "generate:watch": "bun --watch scripts/generate.ts",
+    "author": "bun run scripts/author-edition.ts"
   },
   "dependencies": {
     "react": "^19.2.0",
