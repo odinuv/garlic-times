@@ -32,9 +32,8 @@ export async function writePages(opts: {
   editions: Edition[];
   aboutHtml: string;
   outDir: string;
-  faviconHref: string;
 }): Promise<void> {
-  const { editions, aboutHtml, outDir, faviconHref } = opts;
+  const { editions, aboutHtml, outDir } = opts;
   if (editions.length === 0) throw new Error("No editions found in content/src");
 
   editions.forEach((edition, i) => {
@@ -42,7 +41,7 @@ export async function writePages(opts: {
     const html = renderDocument({
       title: edition.meta.title,
       description: edition.meta.description,
-      faviconHref,
+      faviconHref: edition.masthead.glyph,
       body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
     });
     writeHtml(outDir, [edition.date], html);
@@ -55,7 +54,7 @@ export async function writePages(opts: {
   const aboutDoc = renderDocument({
     title: "About — The Garlic Times",
     description: "About The Garlic Times.",
-    faviconHref,
+    faviconHref: editions[editions.length - 1].masthead.glyph,
     body: React.createElement("div", { dangerouslySetInnerHTML: { __html: aboutHtml } }),
   });
   writeHtml(outDir, ["about"], aboutDoc);
@@ -84,7 +83,7 @@ export async function build(opts: { contentDir: string; outDir: string }): Promi
   const editions = loadEditions(join(contentDir, "src"));
   const aboutPath = join(contentDir, "about.html");
   const aboutHtml = existsSync(aboutPath) ? readFileSync(aboutPath, "utf8") : "<section><h1>About</h1></section>";
-  await writePages({ editions, aboutHtml, outDir, faviconHref: "/static/coat-of-arms.png" });
+  await writePages({ editions, aboutHtml, outDir });
   copyAssets(contentDir, outDir);
   await compileCss("src/styles.css", join(outDir, "styles.css"));
 }

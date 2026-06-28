@@ -26,7 +26,6 @@ test("writePages emits per-date pages, root index, and about", async () => {
     editions: eds,
     aboutHtml: "<section>About</section>",
     outDir: out,
-    faviconHref: "/static/coat-of-arms.png",
   });
 
   expect(existsSync(join(out, "2026-06-25", "index.html"))).toBe(true);
