@@ -21,3 +21,18 @@ test("authorEdition writes a schema-valid edition JSON and returns its path", ()
   expect(() => parseEdition(parsed, "written.json")).not.toThrow();
   expect(parsed.date).toBe("2026-01-31");
 });
+
+test("authorEdition creates an absent outDir and is idempotent when it already exists", () => {
+  const out = mkdtempSync(join(tmpdir(), "gt-author2-"));
+  const outDir = join(out, "editions"); // intentionally not pre-created
+  expect(existsSync(outDir)).toBe(false);
+
+  // First call must create the directory and write the edition.
+  const p1 = authorEdition({ date: "2026-01-31", contentDir: FIX, outDir });
+  expect(existsSync(p1)).toBe(true);
+
+  // Second call writes into the now-existing directory and must NOT throw
+  // (regression: mkdirSync recursive throws EEXIST on some filesystems).
+  const p2 = authorEdition({ date: "2026-02-01", contentDir: FIX, outDir });
+  expect(existsSync(p2)).toBe(true);
+});

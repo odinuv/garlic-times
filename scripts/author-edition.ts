@@ -1,6 +1,6 @@
 // Authoring CLI: assemble one day's edition JSON into content/src/<date>.json.
 // (Distinct from scripts/generate.ts, which renders all editions to dist/.)
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { buildEdition } from "@/pipeline/buildEdition";
 
@@ -15,7 +15,10 @@ export function authorEdition(opts: { date: string; contentDir: string; outDir?:
   const { date, contentDir } = opts;
   const outDir = opts.outDir ?? join(contentDir, "src");
   const edition = buildEdition({ date, contentDir });
-  mkdirSync(outDir, { recursive: true });
+  // Guard the mkdir: `recursive: true` is meant to be a no-op when the
+  // directory exists, but on some filesystems (Windows/OneDrive) it still
+  // throws EEXIST. Only create when absent.
+  if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
   const path = join(outDir, `${date}.json`);
   writeFileSync(path, JSON.stringify(edition, null, 2) + "\n");
   return path;
