@@ -46,7 +46,14 @@ export function pickStories(
         `Not enough "${slot.source}" stories: need one for slot ${slot.position} but pool is empty`,
       );
     }
-    const idx = Math.floor(rng() * pool.length);
-    return pool.splice(idx, 1)[0];
+    // Image slots (the lead and secondary) should carry a photo. Prefer a
+    // story that has an image; fall back to the whole pool if none do.
+    // Image slots come first in slot order, so they claim the image-bearing
+    // stories before the photo-less slots take the remainder.
+    const withImage = slot.hasImage ? pool.filter((s) => s.image) : [];
+    const candidates = withImage.length > 0 ? withImage : pool;
+    const choice = candidates[Math.floor(rng() * candidates.length)];
+    pool.splice(pool.indexOf(choice), 1);
+    return choice;
   });
 }

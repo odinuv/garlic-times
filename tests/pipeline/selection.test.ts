@@ -48,6 +48,51 @@ test("pickStories returns one distinct story per slot from its source pool", () 
   expect(new Set(foxHeadlines).size).toBe(3); // distinct
 });
 
+test("pickStories fills image slots with image-bearing stories when the source has one", () => {
+  const img = { src: "/img/x.jpg", alt: "x" };
+  const pools: Record<Source, SourceStory[]> = {
+    // image-bearing story is NOT at index 0, so rng=()=>0 would miss it without the preference
+    fox: [
+      { source: "fox", headline: "f-noimg-1", summary: "s" },
+      { source: "fox", headline: "f-img", summary: "s", image: img },
+      { source: "fox", headline: "f-noimg-2", summary: "s" },
+    ],
+    cnn: [
+      { source: "cnn", headline: "c-img", summary: "s", image: img },
+      { source: "cnn", headline: "c-noimg", summary: "s" },
+    ],
+  };
+  const slots = assignSlots("2026-01-31"); // odd: [fox,cnn,fox,fox,cnn]; slots 1 & 2 carry images
+  const picked = pickStories(slots, pools, () => 0);
+  // image slots (1 & 2) get the image-bearing story from their source
+  expect(picked[0].image).toBeTruthy();
+  expect(picked[0].headline).toBe("f-img");
+  expect(picked[1].image).toBeTruthy();
+  expect(picked[1].headline).toBe("c-img");
+  // remaining (non-image) slots get the leftover image-less stories
+  expect(picked.slice(2).every((p) => !p.image)).toBe(true);
+});
+
+test("pickStories falls back to any story when an image slot's source has no image-bearing story", () => {
+  const pools: Record<Source, SourceStory[]> = {
+    fox: [
+      { source: "fox", headline: "f1", summary: "s" },
+      { source: "fox", headline: "f2", summary: "s" },
+      { source: "fox", headline: "f3", summary: "s" },
+    ],
+    cnn: [
+      { source: "cnn", headline: "c1", summary: "s" },
+      { source: "cnn", headline: "c2", summary: "s" },
+    ],
+  };
+  const slots = assignSlots("2026-01-31");
+  const picked = pickStories(slots, pools, () => 0);
+  // no images anywhere → still returns 5 distinct stories, image slots simply have none
+  expect(picked).toHaveLength(5);
+  expect(picked.every((p) => !p.image)).toBe(true);
+  expect(new Set(picked.map((p) => p.headline)).size).toBe(5);
+});
+
 test("pickStories throws when a pool is too small for its slots", () => {
   const pools: Record<Source, SourceStory[]> = {
     fox: [{ source: "fox", headline: "f1", summary: "s" }], // only 1, need 3
