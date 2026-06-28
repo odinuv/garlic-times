@@ -12,7 +12,7 @@ export const articleSchema = z.object({
   byline: z.string().optional(),
   body: z.array(z.string()).min(1),
   size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
-  columns: z.union([z.literal(1), z.literal(2)]).default(1),
+  columns: z.union([z.literal(1), z.literal(2)]).default(2),
   image: imageSchema.optional(),
 });
 
