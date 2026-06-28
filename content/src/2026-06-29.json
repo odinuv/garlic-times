@@ -12,31 +12,32 @@
   },
   "articles": [
     {
-      "title": "Premier defends the Government's posture",
-      "byline": "From our Special Correspondent",
-      "body": [
-        "He urged the party to hold its nerve and allow the negotiators room."
-      ],
-      "size": "xl",
-      "columns": 2
-    },
-    {
-      "title": "Mercy team turned back at the wire",
-      "byline": "From our Correspondent",
-      "body": [
-        "An ambulance bound for the western sector was halted and obliged to return."
-      ],
-      "size": "lg",
-      "columns": 2
-    },
-    {
       "title": "Sterling holds firm as the City awaits a statement",
       "byline": "From our Special Correspondent",
       "body": [
         "Gilt-edged stocks were marked a shade higher in late dealings."
       ],
-      "size": "md",
-      "columns": 2
+      "size": "xl",
+      "columns": 2,
+      "image": {
+        "src": "/img/secondary-photo.jpg",
+        "alt": "Locomotive at terminus",
+        "caption": "A morning express prepared for departure."
+      }
+    },
+    {
+      "title": "Cabinet talks resume as ministers seek to break impasse",
+      "byline": "From our Correspondent",
+      "body": [
+        "Ministers reassembled to consider afresh the terms on which the Government may proceed."
+      ],
+      "size": "lg",
+      "columns": 2,
+      "image": {
+        "src": "/img/main-photo.jpg",
+        "alt": "Ministers leaving Downing Street",
+        "caption": "Senior colleagues departing No. 10 after a prolonged session."
+      }
     },
     {
       "title": "Photographs saved by an anonymous gift",
@@ -48,10 +49,19 @@
       "columns": 2
     },
     {
-      "title": "Beeching and Greene try afresh for a railway peace",
+      "title": "Premier defends the Government's posture",
+      "byline": "From our Special Correspondent",
+      "body": [
+        "He urged the party to hold its nerve and allow the negotiators room."
+      ],
+      "size": "md",
+      "columns": 2
+    },
+    {
+      "title": "Mercy team turned back at the wire",
       "byline": "From our Correspondent",
       "body": [
-        "A renewed effort to settle the long dispute over wages and manning begins next week."
+        "An ambulance bound for the western sector was halted and obliged to return."
       ],
       "size": "md",
       "columns": 2
