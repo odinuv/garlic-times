@@ -23,3 +23,8 @@ test("seedFromDate is stable per date and differs across dates", () => {
   expect(seedFromDate("2026-06-28")).toEqual(seedFromDate("2026-06-28"));
   expect(seedFromDate("2026-06-28")).not.toEqual(seedFromDate("2026-06-29"));
 });
+
+test("mulberry32 produces a stable golden sequence (guards reproducibility)", () => {
+  const r = mulberry32(123);
+  expect(r()).toBeCloseTo(0.7872516233474016, 10);
+});

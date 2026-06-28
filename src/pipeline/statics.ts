@@ -18,7 +18,7 @@ export function staticFields(
   const displayDate = formatDisplayDate(date);
   return {
     displayDate,
-    editionNo: "No. 58,419",
+    editionNo: "No. 58,419", // TODO: derive from date (placeholder for skeleton)
     strapline: `London · ${displayDate} · Twelve Cloves`,
     price: "Price 6d.",
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
