@@ -1,6 +1,6 @@
 // scripts/generate.ts
 import React from "react";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync } from "node:fs";
 import { join } from "node:path";
 import { parseEdition, type Edition } from "@/edition/schema";
 import { EditionPage } from "@/edition/Edition";
@@ -61,13 +61,30 @@ export async function writePages(opts: {
   writeHtml(outDir, ["about"], aboutDoc);
 }
 
+export function copyAssets(contentDir: string, outDir: string): void {
+  for (const sub of ["img", "static"]) {
+    const from = join(contentDir, sub);
+    if (existsSync(from)) cpSync(from, join(outDir, sub), { recursive: true });
+  }
+}
+
+export async function compileCss(inputCss: string, outCss: string): Promise<void> {
+  const proc = Bun.spawn(["bunx", "@tailwindcss/cli", "-i", inputCss, "-o", outCss, "--minify"], {
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  const code = await proc.exited;
+  if (code !== 0) throw new Error(`Tailwind CLI failed with exit code ${code}`);
+}
+
 export async function build(opts: { contentDir: string; outDir: string }): Promise<void> {
   const { contentDir, outDir } = opts;
   const editions = loadEditions(join(contentDir, "src"));
   const aboutPath = join(contentDir, "about.html");
   const aboutHtml = existsSync(aboutPath) ? readFileSync(aboutPath, "utf8") : "<section><h1>About</h1></section>";
   await writePages({ editions, aboutHtml, outDir, faviconHref: "/static/coat-of-arms.png" });
-  // CSS compilation + asset copy are added in Task 6.
+  copyAssets(contentDir, outDir);
+  await compileCss("src/styles.css", join(outDir, "styles.css"));
 }
 
 if (import.meta.main) {
