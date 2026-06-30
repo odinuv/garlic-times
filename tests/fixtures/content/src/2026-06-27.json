@@ -4,10 +4,23 @@
   "editionNo": "No. 1",
   "strapline": "London · Friday June 27, 2026",
   "price": "Price 6d.",
-  "masthead": { "the": "The", "middle": "Garlic", "end": "Times", "glyph": "/static/coat-of-arms.png" },
+  "masthead": {
+    "the": "The",
+    "middle": "Garlic",
+    "end": "Times",
+    "glyph": "/static/coat-of-arms.png"
+  },
   "articles": [{ "title": "Newest day", "body": ["Body."] }],
-  "rates": { "title": "Foreign Exchanges — £1 buys", "rows": [{ "label": "U.S. Dollar", "value": "2.80", "delta": "+0.00" }] },
-  "recipe": { "kicker": "From the Kitchen", "title": "Toast", "meta": "Serves one.", "body": ["Toast bread."] },
+  "rates": {
+    "title": "Foreign Exchanges — £1 buys",
+    "rows": [{ "label": "U.S. Dollar", "value": "2.80", "delta": "+0.00" }]
+  },
+  "recipe": {
+    "kicker": "From the Kitchen",
+    "title": "Toast",
+    "meta": "Serves one.",
+    "body": ["Toast bread."]
+  },
   "advert": { "src": "/img/advert.jpg", "alt": "Advert" },
   "meta": { "title": "Garlic Times — June 27", "description": "Newest." }
 }

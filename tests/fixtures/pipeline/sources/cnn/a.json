@@ -1,1 +1,5 @@
-{ "headline": "CNN A", "summary": "CNN story A summary.", "image": { "src": "/img/main-photo.jpg", "alt": "x", "caption": "y" } }
+{
+  "headline": "CNN A",
+  "summary": "CNN story A summary.",
+  "image": { "src": "/img/main-photo.jpg", "alt": "x", "caption": "y" }
+}

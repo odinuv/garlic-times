@@ -2,8 +2,18 @@ import type { Edition } from "@/edition/schema";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export function formatDisplayDate(date: string): string {
@@ -14,7 +24,10 @@ export function formatDisplayDate(date: string): string {
 
 export function staticFields(
   date: string,
-): Pick<Edition, "displayDate" | "editionNo" | "strapline" | "price" | "masthead" | "rates" | "advert" | "meta"> {
+): Pick<
+  Edition,
+  "displayDate" | "editionNo" | "strapline" | "price" | "masthead" | "rates" | "advert" | "meta"
+> {
   const displayDate = formatDisplayDate(date);
   return {
     displayDate,
@@ -32,7 +45,8 @@ export function staticFields(
     advert: {
       src: "/img/advert.jpg",
       alt: "An advertisement for a fine wristwatch",
-      caption: '"The watch that does not tire." — By appointment to discerning gentlemen since 1905. Enquiries to your usual jeweller.',
+      caption:
+        '"The watch that does not tire." — By appointment to discerning gentlemen since 1905. Enquiries to your usual jeweller.',
     },
     meta: {
       title: `The Garlic Times — ${displayDate}`,

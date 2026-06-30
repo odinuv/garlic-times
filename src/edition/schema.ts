@@ -31,9 +31,7 @@ export const editionSchema = z.object({
   articles: z.array(articleSchema).min(1),
   rates: z.object({
     title: z.string(),
-    rows: z.array(
-      z.object({ label: z.string(), value: z.string(), delta: z.string() }),
-    ),
+    rows: z.array(z.object({ label: z.string(), value: z.string(), delta: z.string() })),
   }),
   recipe: z.object({
     kicker: z.string(),

@@ -57,7 +57,9 @@ export function ArticleBlock({ article }: { article: Article }) {
           )}
         </figure>
       )}
-      <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 [&>p]:break-inside-avoid ${colsClass}`}>
+      <div
+        className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 [&>p]:break-inside-avoid ${colsClass}`}
+      >
         {article.body.map((p, i) => (
           <p key={i}>{renderInline(p)}</p>
         ))}
@@ -77,7 +79,9 @@ export function RatesBox({ rates }: { rates: Edition["rates"] }) {
             <tr key={i} className={i < rates.rows.length - 1 ? "border-b border-ink/30" : ""}>
               <td className="py-1">{row.label}</td>
               <td className="py-1 text-right tabular-nums">{row.value}</td>
-              <td className="py-1 pl-2 text-right tabular-nums text-muted-foreground">{row.delta}</td>
+              <td className="py-1 pl-2 text-right tabular-nums text-muted-foreground">
+                {row.delta}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -108,7 +112,12 @@ export function AdvertBox({ advert }: { advert: EditionImage }) {
     <article className="border border-ink p-4 flex flex-col">
       <p className="text-center text-[11px] uppercase tracking-[0.25em]">Advertisement</p>
       <Rule />
-      <img src={advert.src} alt={advert.alt} loading="lazy" className="w-full grayscale contrast-110" />
+      <img
+        src={advert.src}
+        alt={advert.alt}
+        loading="lazy"
+        className="w-full grayscale contrast-110"
+      />
       {advert.caption && (
         <>
           <Rule />

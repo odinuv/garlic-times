@@ -8,7 +8,12 @@ test("formatDisplayDate renders the period long-date style", () => {
 
 test("staticFields provides masthead, rates, advert and date-derived fields", () => {
   const f = staticFields("2026-06-28");
-  expect(f.masthead).toEqual({ the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" });
+  expect(f.masthead).toEqual({
+    the: "The",
+    middle: "Garlic",
+    end: "Times",
+    glyph: "/static/new-logo.png",
+  });
   expect(f.displayDate).toBe("Sunday June 28, 2026");
   expect(f.strapline).toContain("Sunday June 28, 2026");
   expect(f.rates.rows.length).toBeGreaterThan(0);

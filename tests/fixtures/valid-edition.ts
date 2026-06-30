@@ -42,7 +42,11 @@ export const validEdition: Edition = {
     meta: "Serves four. Preparation, half an hour; cooking, four hours.",
     body: ["**Suet crust:** 8 oz flour…", "**Filling:** 1 lb chuck steak…", "Sift the flour…"],
   },
-  advert: { src: "/img/advert.jpg", alt: "A fine wristwatch", caption: '"The watch that does not tire."' },
+  advert: {
+    src: "/img/advert.jpg",
+    alt: "A fine wristwatch",
+    caption: '"The watch that does not tire."',
+  },
   meta: {
     title: "The Garlic Times — Friday October 3, 1962",
     description: "The Garlic Times — front page edition.",

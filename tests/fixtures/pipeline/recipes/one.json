@@ -1,1 +1,6 @@
-{ "kicker": "From the Kitchen", "title": "Recipe One", "meta": "Serves two.", "body": ["Step one."] }
+{
+  "kicker": "From the Kitchen",
+  "title": "Recipe One",
+  "meta": "Serves two.",
+  "body": ["Step one."]
+}
