@@ -12,3 +12,9 @@ export interface Candidate {
   bodyMarkdown: string;
   imageUrl?: string;
 }
+
+export interface GarlicTitled extends Candidate {
+  garlicTitle: string;
+  swappedTerm: string;
+  isMaga: boolean;
+}
