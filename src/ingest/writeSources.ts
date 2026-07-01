@@ -1,10 +1,4 @@
-import {
-  mkdirSync,
-  writeFileSync,
-  existsSync,
-  readdirSync,
-  rmSync,
-} from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Source } from "@/pipeline/types";
 import type { GarlicArticle } from "@/ingest/types";
@@ -71,9 +65,6 @@ export async function writeSourceFiles(opts: {
       body: a.body,
       ...(image ? { image } : {}),
     };
-    writeFileSync(
-      join(dir, `${nn}-${slug}.json`),
-      JSON.stringify(record, null, 2) + "\n"
-    );
+    writeFileSync(join(dir, `${nn}-${slug}.json`), JSON.stringify(record, null, 2) + "\n");
   }
 }

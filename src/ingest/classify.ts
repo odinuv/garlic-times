@@ -23,7 +23,11 @@ export async function classifyCandidates(
     .map((c, i) => `${i}. ${c.title}\n   ${c.bodyMarkdown.slice(0, 300).replace(/\s+/g, " ")}`)
     .join("\n");
   const prompt = `Classify each story. Reply with a JSON array of {index, eligible, reason}, one per story.\n\n${list}`;
-  const verdicts = await completeJson(complete, { model: MODELS.triage, system: SYSTEM, prompt }, schema);
+  const verdicts = await completeJson(
+    complete,
+    { model: MODELS.triage, system: SYSTEM, prompt },
+    schema,
+  );
   const eligible = new Set(verdicts.filter((v) => v.eligible).map((v) => v.index));
   return candidates.filter((_, i) => eligible.has(i));
 }

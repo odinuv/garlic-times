@@ -4,8 +4,13 @@ import type { GarlicTitled } from "@/ingest/types";
 import type { GeminiComplete } from "@/ingest/gemini";
 
 const candidate: GarlicTitled = {
-  source: "cnn", url: "https://x/1", title: "Russia is burning", bodyMarkdown: "Russia is burning today. Officials in Russia spoke.",
-  garlicTitle: "Garlic is burning", swappedTerm: "Russia", isMaga: false,
+  source: "cnn",
+  url: "https://x/1",
+  title: "Russia is burning",
+  bodyMarkdown: "Russia is burning today. Officials in Russia spoke.",
+  garlicTitle: "Garlic is burning",
+  swappedTerm: "Russia",
+  isMaga: false,
 };
 
 test("swapBody returns a paragraph array body", async () => {

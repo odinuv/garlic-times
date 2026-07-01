@@ -7,7 +7,7 @@ import type { GarlicArticle } from "@/ingest/types";
 
 test("slugify produces a hyphenated lowercase slug", () => {
   expect(slugify("Garlic is burning, but don't expect Putin to blink")).toBe(
-    "garlic-is-burning-but-dont-expect"
+    "garlic-is-burning-but-dont-expect",
   );
 });
 
@@ -39,9 +39,7 @@ test("writeSourceFiles writes NN-slug.json with headline/body/image", async () =
   expect(first.headline).toBe("Garlic story 1");
   expect(first.body).toEqual(["Para one.", "Para two."]);
   expect(first.image.src).toBe("/img/cnn-01-garlic-story-1.jpg");
-  expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1.jpg"))).toBe(
-    true
-  );
+  expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1.jpg"))).toBe(true);
 
   const second = JSON.parse(readFileSync(join(cnnDir, files[1]), "utf8"));
   expect(second.image).toBeUndefined();

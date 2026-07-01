@@ -37,7 +37,9 @@ export async function runIngest(opts: {
   for (const source of SOURCES) {
     const n = articles.filter((a) => a.source === source).length;
     if (n < minPerSource) {
-      throw new Error(`Only ${n} "${source}" articles after selection; need at least ${minPerSource}.`);
+      throw new Error(
+        `Only ${n} "${source}" articles after selection; need at least ${minPerSource}.`,
+      );
     }
   }
 

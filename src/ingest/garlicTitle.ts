@@ -26,12 +26,18 @@ export async function garlicTitleCandidates(
   if (candidates.length === 0) return [];
   const list = candidates.map((c, i) => `${i}. ${c.title}`).join("\n");
   const prompt = `Rewrite each headline. Reply with a JSON array of {index, garlicTitle, swappedTerm, isMaga}.\n\n${list}`;
-  const results = await completeJson(complete, { model: MODELS.triage, system: SYSTEM, prompt }, schema);
+  const results = await completeJson(
+    complete,
+    { model: MODELS.triage, system: SYSTEM, prompt },
+    schema,
+  );
   const byIndex = new Map(results.map((r) => [r.index, r]));
   return candidates
     .map((c, i) => {
       const r = byIndex.get(i);
-      return r ? { ...c, garlicTitle: r.garlicTitle, swappedTerm: r.swappedTerm, isMaga: r.isMaga } : null;
+      return r
+        ? { ...c, garlicTitle: r.garlicTitle, swappedTerm: r.swappedTerm, isMaga: r.isMaga }
+        : null;
     })
     .filter((x): x is GarlicTitled => x !== null);
 }

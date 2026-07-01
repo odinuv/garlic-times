@@ -14,12 +14,14 @@ export async function selectBest(
   perSource = 4,
 ): Promise<GarlicTitled[]> {
   if (candidates.length === 0) return [];
-  const list = candidates
-    .map((c, i) => `${i}. [${c.source}] ${c.garlicTitle}`)
-    .join("\n");
+  const list = candidates.map((c, i) => `${i}. [${c.source}] ${c.garlicTitle}`).join("\n");
   const prompt = `From the list below, pick the best up to ${perSource} from "cnn" and up to ${perSource} from "fox".
 Reply as JSON {"cnn":[indices...],"fox":[indices...]} ordered best-first.\n\n${list}`;
-  const picked = await completeJson(complete, { model: MODELS.triage, system: SYSTEM, prompt }, schema);
+  const picked = await completeJson(
+    complete,
+    { model: MODELS.triage, system: SYSTEM, prompt },
+    schema,
+  );
 
   const take = (source: Source, indices: number[]): GarlicTitled[] =>
     indices

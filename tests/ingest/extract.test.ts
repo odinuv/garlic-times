@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { extractArticle } from "@/ingest/fetch";
 
-const html = readFileSync(join(import.meta.dir, "..", "fixtures", "ingest", "article.html"), "utf8");
+const html = readFileSync(
+  join(import.meta.dir, "..", "fixtures", "ingest", "article.html"),
+  "utf8",
+);
 
 test("extractArticle returns title, markdown body, and og:image", () => {
   const out = extractArticle(html, "https://example.com/a");
