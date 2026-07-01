@@ -7,6 +7,7 @@ const story: SourceStory = {
   headline: "Cabinet talks resume",
   body: ["Para one.", "Para two.", "Para three.", "Para four."],
   image: { src: "/img/main-photo.jpg", alt: "Ministers", caption: "No. 10." },
+  sourceUrl: "https://news.example/cabinet",
 };
 
 test("xl slot keeps up to 4 paragraphs and the image", () => {
@@ -17,6 +18,7 @@ test("xl slot keeps up to 4 paragraphs and the image", () => {
   expect(a.size).toBe("xl");
   expect(a.byline).toBeTruthy();
   expect(a.image).toEqual(story.image);
+  expect(a.sourceUrl).toBe("https://news.example/cabinet");
 });
 
 test("lg slot keeps the first 3 paragraphs", () => {

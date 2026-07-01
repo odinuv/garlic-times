@@ -14,6 +14,7 @@ export const articleSchema = z.object({
   size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
   columns: z.union([z.literal(1), z.literal(2)]).default(2),
   image: imageSchema.optional(),
+  sourceUrl: z.string().optional(),
 });
 
 export const editionSchema = z.object({

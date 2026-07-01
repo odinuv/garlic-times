@@ -7,6 +7,7 @@ export interface SourceStory {
   headline: string;
   body: string[];
   image?: EditionImage;
+  sourceUrl?: string;
 }
 
 export interface Slot {

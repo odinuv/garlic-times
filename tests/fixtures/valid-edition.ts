@@ -16,6 +16,7 @@ export const validEdition: Edition = {
       columns: 2,
       image: { src: "/img/main.jpg", alt: "Ministers leaving", caption: "Departing No. 10." },
       body: ["First paragraph with a **bold lead-in** and prose.", "Second paragraph."],
+      sourceUrl: "https://example.com/original",
     },
     {
       title: "A railway peace",

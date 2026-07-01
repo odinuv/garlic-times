@@ -61,7 +61,23 @@ export function ArticleBlock({ article }: { article: Article }) {
         className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 [&>p]:break-inside-avoid ${colsClass}`}
       >
         {article.body.map((p, i) => (
-          <p key={i}>{renderInline(p)}</p>
+          <p key={i}>
+            {renderInline(p)}
+            {article.sourceUrl && i === article.body.length - 1 && (
+              <>
+                {" "}
+                <a
+                  href={article.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold no-underline"
+                  aria-label="Read the original article"
+                >
+                  {">>"}
+                </a>
+              </>
+            )}
+          </p>
         ))}
       </div>
     </article>

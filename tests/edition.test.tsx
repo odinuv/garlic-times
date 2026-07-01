@@ -36,3 +36,14 @@ test("omits next arrow on the latest edition", () => {
   expect(html).toContain('href="/2026-06-26/"');
   expect(html).not.toContain('href="/2026-06-28/"');
 });
+
+test("each article links to its original source with a >> marker", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  // lead article has sourceUrl → renders the source link
+  expect(html).toContain('href="https://example.com/original"');
+  expect(html).toContain('aria-label="Read the original article"');
+  // only the one article with a sourceUrl gets a link (others omit it)
+  expect((html.match(/Read the original article/g) || []).length).toBe(1);
+});

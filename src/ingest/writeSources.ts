@@ -63,6 +63,7 @@ export async function writeSourceFiles(opts: {
     const record = {
       headline: a.garlicTitle,
       body: a.body,
+      sourceUrl: a.url,
       ...(image ? { image } : {}),
     };
     writeFileSync(join(dir, `${nn}-${slug}.json`), JSON.stringify(record, null, 2) + "\n");

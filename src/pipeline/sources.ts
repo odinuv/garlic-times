@@ -7,6 +7,7 @@ interface RawStory {
   headline: string;
   body: string[];
   image?: EditionImage;
+  sourceUrl?: string;
 }
 
 export function loadSourceStories(sourcesDir: string, source: Source): SourceStory[] {
@@ -16,6 +17,12 @@ export function loadSourceStories(sourcesDir: string, source: Source): SourceSto
     .sort();
   return files.map((f) => {
     const raw = JSON.parse(readFileSync(join(dir, f), "utf8")) as RawStory;
-    return { source, headline: raw.headline, body: raw.body, image: raw.image };
+    return {
+      source,
+      headline: raw.headline,
+      body: raw.body,
+      image: raw.image,
+      sourceUrl: raw.sourceUrl,
+    };
   });
 }
