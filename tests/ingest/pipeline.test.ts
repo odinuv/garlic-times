@@ -23,16 +23,16 @@ const fetchText = async (url: string) => {
   return ARTICLE(url.replace("https://", ""));
 };
 
-// The model: mark all eligible, garlic each title, select 3 per source, swap body.
+// The model: mark all 6 eligible, garlic each title, select 3 per source, swap body.
 const complete: GeminiComplete = async ({ system }) => {
   if (system.includes("ELIGIBLE")) {
-    return JSON.stringify(Array.from({ length: 3 }, (_, i) => ({ index: i, eligible: true, reason: "ok" })));
+    return JSON.stringify(Array.from({ length: 6 }, (_, i) => ({ index: i, eligible: true, reason: "ok" })));
   }
   if (system.includes("joke headline")) {
-    return JSON.stringify(Array.from({ length: 3 }, (_, i) => ({ index: i, garlicTitle: `garlic ${i}`, swappedTerm: "x", isMaga: false })));
+    return JSON.stringify(Array.from({ length: 6 }, (_, i) => ({ index: i, garlicTitle: `garlic ${i}`, swappedTerm: "x", isMaga: false })));
   }
   if (system.includes("curate")) {
-    return JSON.stringify({ cnn: [0, 1, 2], fox: [0, 1, 2] });
+    return JSON.stringify({ cnn: [0, 1, 2], fox: [3, 4, 5] });
   }
   return JSON.stringify({ paragraphs: ["Garlic para one.", "Garlic para two."] });
 };

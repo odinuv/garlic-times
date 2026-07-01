@@ -23,20 +23,16 @@ export async function runIngest(opts: {
   const perSource = opts.perSource ?? 4;
   const minPerSource = opts.minPerSource ?? 3;
 
-  // Process each source independently so LLM indices stay source-relative.
-  const allSelected = (
-    await Promise.all(
-      SOURCES.map(async (source) => {
-        const candidates = await fetchCandidates(source, { fetchText: opts.fetchText });
-        const eligible = await classifyCandidates(candidates, complete);
-        const titled = await garlicTitleCandidates(eligible, complete);
-        return selectBest(titled, complete, perSource);
-      }),
-    )
+  const candidates = (
+    await Promise.all(SOURCES.map((s) => fetchCandidates(s, { fetchText: opts.fetchText })))
   ).flat();
 
+  const eligible = await classifyCandidates(candidates, complete);
+  const titled = await garlicTitleCandidates(eligible, complete);
+  const selected = await selectBest(titled, complete, perSource);
+
   const articles: GarlicArticle[] = [];
-  for (const c of allSelected) articles.push(await swapBody(c, complete));
+  for (const c of selected) articles.push(await swapBody(c, complete));
 
   for (const source of SOURCES) {
     const n = articles.filter((a) => a.source === source).length;
