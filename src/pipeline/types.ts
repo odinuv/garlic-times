@@ -5,7 +5,7 @@ export type Source = "fox" | "cnn";
 export interface SourceStory {
   source: Source;
   headline: string;
-  summary: string;
+  body: string[];
   image?: EditionImage;
 }
 

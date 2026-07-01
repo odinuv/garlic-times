@@ -5,7 +5,7 @@ import type { EditionImage } from "@/edition/schema";
 
 interface RawStory {
   headline: string;
-  summary: string;
+  body: string[];
   image?: EditionImage;
 }
 
@@ -16,6 +16,6 @@ export function loadSourceStories(sourcesDir: string, source: Source): SourceSto
     .sort();
   return files.map((f) => {
     const raw = JSON.parse(readFileSync(join(dir, f), "utf8")) as RawStory;
-    return { source, headline: raw.headline, summary: raw.summary, image: raw.image };
+    return { source, headline: raw.headline, body: raw.body, image: raw.image };
   });
 }

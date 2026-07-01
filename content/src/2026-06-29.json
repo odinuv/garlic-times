@@ -14,7 +14,9 @@
     {
       "title": "Sterling holds firm as the City awaits a statement",
       "byline": "From our Special Correspondent",
-      "body": ["Gilt-edged stocks were marked a shade higher in late dealings."],
+      "body": [
+        "Gilt-edged stocks were marked a shade higher in late dealings."
+      ],
       "size": "xl",
       "columns": 2,
       "image": {
@@ -40,21 +42,27 @@
     {
       "title": "Photographs saved by an anonymous gift",
       "byline": "From our Special Correspondent",
-      "body": ["A threatened collection has been secured for the nation by a benefaction."],
+      "body": [
+        "A threatened collection has been secured for the nation by a benefaction."
+      ],
       "size": "md",
       "columns": 2
     },
     {
       "title": "Premier defends the Government's posture",
       "byline": "From our Special Correspondent",
-      "body": ["He urged the party to hold its nerve and allow the negotiators room."],
+      "body": [
+        "He urged the party to hold its nerve and allow the negotiators room."
+      ],
       "size": "md",
       "columns": 2
     },
     {
       "title": "Mercy team turned back at the wire",
       "byline": "From our Correspondent",
-      "body": ["An ambulance bound for the western sector was halted and obliged to return."],
+      "body": [
+        "An ambulance bound for the western sector was halted and obliged to return."
+      ],
       "size": "md",
       "columns": 2
     }
