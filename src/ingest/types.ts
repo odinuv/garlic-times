@@ -18,3 +18,7 @@ export interface GarlicTitled extends Candidate {
   swappedTerm: string;
   isMaga: boolean;
 }
+
+export interface GarlicArticle extends GarlicTitled {
+  body: string[];
+}
