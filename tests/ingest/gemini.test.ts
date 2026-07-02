@@ -1,6 +1,12 @@
 import { test, expect } from "bun:test";
 import { z } from "zod";
-import { completeJson, MODELS, type GeminiComplete } from "@/ingest/gemini";
+import {
+  completeJson,
+  MODELS,
+  isTransientError,
+  withRetry,
+  type GeminiComplete,
+} from "@/ingest/gemini";
 
 const schema = z.object({ value: z.number() });
 
@@ -31,4 +37,44 @@ test("completeJson throws after exhausting retries", async () => {
 test("MODELS exposes triage and body defaults", () => {
   expect(typeof MODELS.triage).toBe("string");
   expect(typeof MODELS.body).toBe("string");
+});
+
+test("isTransientError flags server/network errors but not client errors", () => {
+  expect(isTransientError(new Error('{"error":{"code":503,"status":"UNAVAILABLE"}}'))).toBe(true);
+  expect(isTransientError(new Error("429 RESOURCE_EXHAUSTED"))).toBe(true);
+  expect(isTransientError(new Error("fetch failed"))).toBe(true);
+  expect(isTransientError(new Error("400 INVALID_ARGUMENT: bad request"))).toBe(false);
+  expect(isTransientError(new Error("API key not valid"))).toBe(false);
+});
+
+test("withRetry retries transient failures then succeeds", async () => {
+  let calls = 0;
+  const fn = async () => {
+    calls += 1;
+    if (calls < 3) throw new Error("503 UNAVAILABLE");
+    return "ok";
+  };
+  const out = await withRetry(fn, { retries: 3, sleep: async () => {} });
+  expect(out).toBe("ok");
+  expect(calls).toBe(3);
+});
+
+test("withRetry does not retry a non-transient error", async () => {
+  let calls = 0;
+  const fn = async () => {
+    calls += 1;
+    throw new Error("400 INVALID_ARGUMENT");
+  };
+  await expect(withRetry(fn, { retries: 3, sleep: async () => {} })).rejects.toThrow("400");
+  expect(calls).toBe(1);
+});
+
+test("withRetry gives up after exhausting retries on persistent transient errors", async () => {
+  let calls = 0;
+  const fn = async () => {
+    calls += 1;
+    throw new Error("503 UNAVAILABLE");
+  };
+  await expect(withRetry(fn, { retries: 2, sleep: async () => {} })).rejects.toThrow("503");
+  expect(calls).toBe(3); // initial attempt + 2 retries
 });
