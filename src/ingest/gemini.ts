@@ -26,7 +26,18 @@ export function createGeminiComplete(
     const res = await ai.models.generateContent({
       model,
       contents: prompt,
-      config: { systemInstruction: system, responseMimeType: "application/json" },
+      config: {
+        systemInstruction: system,
+        responseMimeType: "application/json",
+        // These stages are mechanical JSON extraction — no chain-of-thought
+        // needed. Gemini 2.5 "thinking" is on by default and its (highly
+        // variable) thinking tokens share the output budget; when thinking +
+        // JSON exceeds the cap the reply is truncated, causing intermittent
+        // "Unexpected EOF" JSON parse failures. Disable thinking and give the
+        // response ample room so the full budget goes to the JSON.
+        thinkingConfig: { thinkingBudget: 0 },
+        maxOutputTokens: 8192,
+      },
     });
     const u = res.usageMetadata;
     if (tracker && u) {
