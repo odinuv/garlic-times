@@ -53,10 +53,16 @@ export function createImageGenerator(
         u.candidatesTokenCount ?? 0,
       );
     }
-    for (const p of res.candidates?.[0]?.content?.parts ?? []) {
+    const cand = res.candidates?.[0];
+    for (const p of cand?.content?.parts ?? []) {
       if (p.inlineData?.data) return new Uint8Array(Buffer.from(p.inlineData.data, "base64"));
     }
-    return null; // model returned no image
+    // No image part — usually a content-safety refusal. Surface the reason
+    // (finishReason / any text the model returned) so the skip log explains why.
+    const textPart = cand?.content?.parts?.find((p) => p.text)?.text;
+    throw new Error(
+      `no image returned (finishReason=${cand?.finishReason ?? "unknown"}${textPart ? `: ${textPart.slice(0, 160)}` : ""})`,
+    );
   };
 }
 
