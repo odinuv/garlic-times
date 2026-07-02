@@ -68,17 +68,26 @@ const realFetchBytes: FetchBytes = async (url) => {
 
 const SOURCES: Source[] = ["cnn", "fox"];
 
+const errMsg = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
 // Illustrate the top `perSource` article(s) per source that carry a photo.
 // Up to `retries` extra attempts on failure; if all fail, leave the article
 // without an illustration (its slot will render text-only). Other articles are
 // returned unchanged (no illustration).
 export async function illustrateSelected(
   articles: GarlicArticle[],
-  opts: { generate: ImageGenerator; fetchBytes?: FetchBytes; perSource?: number; retries?: number },
+  opts: {
+    generate: ImageGenerator;
+    fetchBytes?: FetchBytes;
+    perSource?: number;
+    retries?: number;
+    warn?: (msg: string) => void;
+  },
 ): Promise<GarlicArticle[]> {
   const fetchBytes = opts.fetchBytes ?? realFetchBytes;
   const perSource = opts.perSource ?? 1;
   const retries = opts.retries ?? 1;
+  const warn = opts.warn ?? ((msg: string) => console.warn(msg));
 
   const chosen = new Set<GarlicArticle>();
   for (const source of SOURCES) {
@@ -97,16 +106,24 @@ export async function illustrateSelected(
     let original: Uint8Array | null = null;
     try {
       original = await fetchBytes(a.imageUrl);
-    } catch {
-      original = null;
+    } catch (err) {
+      warn(`illustrate: could not fetch photo for "${a.garlicTitle}": ${errMsg(err)}`);
     }
     let bytes: Uint8Array | null = null;
+    let lastErr: unknown;
     for (let attempt = 0; original && attempt <= retries && !bytes; attempt++) {
       try {
         bytes = await opts.generate({ imageBytes: original, mimeType: "image/jpeg" });
-      } catch {
+      } catch (err) {
+        lastErr = err;
         bytes = null;
       }
+    }
+    if (original && !bytes) {
+      const reason = lastErr ? errMsg(lastErr) : "model returned no image";
+      warn(
+        `illustrate: could not illustrate "${a.garlicTitle}" after ${retries + 1} attempt(s) (${reason}); slot will be text-only.`,
+      );
     }
     // On success keep BOTH the sketch and the source photo (audit trail).
     result.push(bytes ? { ...a, illustration: bytes, originalImage: original ?? undefined } : a);

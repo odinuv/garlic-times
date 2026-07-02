@@ -40,6 +40,7 @@ test("does not keep an original when illustration fails", async () => {
     generate: gen,
     fetchBytes,
     retries: 0,
+    warn: () => {},
   });
   expect(out[0].illustration).toBeUndefined();
   expect(out[0].originalImage).toBeUndefined();
@@ -61,16 +62,19 @@ test("retries once then succeeds", async () => {
   expect(out[0].illustration).toEqual(new Uint8Array([7]));
 });
 
-test("skips the image (no illustration) when generation keeps failing", async () => {
+test("skips the image and logs why when generation keeps failing", async () => {
   const gen: ImageGenerator = async () => {
     throw new Error("boom");
   };
+  const warnings: string[] = [];
   const out = await illustrateSelected([art("cnn", 1, true)], {
     generate: gen,
     fetchBytes,
     retries: 1,
+    warn: (m) => warnings.push(m),
   });
   expect(out[0].illustration).toBeUndefined();
+  expect(warnings.some((w) => w.includes("cnn garlic 1") && w.includes("boom"))).toBe(true);
 });
 
 test("skips when the model returns no image (null)", async () => {
@@ -79,6 +83,7 @@ test("skips when the model returns no image (null)", async () => {
     generate: gen,
     fetchBytes,
     retries: 1,
+    warn: () => {},
   });
   expect(out[0].illustration).toBeUndefined();
 });
