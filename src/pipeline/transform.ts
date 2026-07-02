@@ -3,11 +3,11 @@ import type { SourceStory, Slot } from "@/pipeline/types";
 
 // Period-style bylines, rotated by slot position so they vary across the page.
 const BYLINES = [
-  "From our Correspondent",
+  "By our Reporter",
   "From our Special Correspondent",
   "From our Garlic Correspondent",
-  "From our Diplomatic Correspondent",
-  "By our Staff Reporter",
+  "By our Vegetable Reporter",
+  "By our Onion Correspondent",
 ];
 
 const PARAS_FOR_SIZE: Record<Slot["size"], number> = { xl: 4, lg: 3, md: 2 };
