@@ -9,7 +9,7 @@ Pick the word so the result is funny and STILL READS LIKE A REAL HEADLINE:
 - Prefer the grammatical OBJECT; if there is no clear object, use the subject or another concrete noun.
 - Do NOT swap an abstract word (turmoil, capacity, appeal, visit, spending), and do NOT drop garlic into the middle of a phrase where it reads broken.
 Keep the rest of the headline identical. Report "swappedTerm" = the original word you replaced.
-SPECIAL CASE: if the story is about MAGA, set isMaga=true, leave the title UNCHANGED, and set swappedTerm to "" (readers know MAGA = "Make America Garlic Again").
+SPECIAL CASE — narrow: ONLY when the headline TEXT literally contains the word "MAGA" do you set isMaga=true, leave the title UNCHANGED, and set swappedTerm to "" (readers know MAGA = "Make America Garlic Again"). EVERY other story — including other Trump, legal, or political stories — MUST get a word swapped for garlic; never set isMaga for those.
 GOOD (concrete noun, still scans): "Chinese spy garlic was able to transmit information back to Beijing"; "Border agents uncover $3.7M in garlic masquerading as a cucumber delivery"; "Scientists identify secret garlic in Leonardo da Vinci paintings".
 BAD (abstract or mid-phrase — avoid): "bank earnings after recent garlic"; "entrepreneurs of garlic"; "total garlic is shrinking".`;
 
