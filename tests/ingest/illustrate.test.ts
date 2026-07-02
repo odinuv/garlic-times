@@ -27,9 +27,22 @@ test("illustrates only the top article per source that has a photo", async () =>
   ];
   const out = await illustrateSelected(articles, { generate: okGen, fetchBytes, perSource: 1 });
   expect(out[0].illustration).toBeInstanceOf(Uint8Array); // cnn top
+  expect(out[0].originalImage).toEqual(new Uint8Array([1, 2, 3])); // source photo kept
   expect(out[1].illustration).toBeUndefined(); // cnn #2 not illustrated
+  expect(out[1].originalImage).toBeUndefined();
   expect(out[2].illustration).toBeInstanceOf(Uint8Array); // fox top
   expect(out[3].illustration).toBeUndefined(); // fox #2 has no photo
+});
+
+test("does not keep an original when illustration fails", async () => {
+  const gen: ImageGenerator = async () => null;
+  const out = await illustrateSelected([art("cnn", 1, true)], {
+    generate: gen,
+    fetchBytes,
+    retries: 0,
+  });
+  expect(out[0].illustration).toBeUndefined();
+  expect(out[0].originalImage).toBeUndefined();
 });
 
 test("retries once then succeeds", async () => {

@@ -22,4 +22,5 @@ export interface GarlicTitled extends Candidate {
 export interface GarlicArticle extends GarlicTitled {
   body: string[];
   illustration?: Uint8Array; // B&W courtroom-sketch bytes, set when illustrated
+  originalImage?: Uint8Array; // the source photo the illustration was made from (audit trail)
 }

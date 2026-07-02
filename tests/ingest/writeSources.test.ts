@@ -20,7 +20,9 @@ const article = (n: number, illustrated: boolean): GarlicArticle => ({
   swappedTerm: "x",
   isMaga: false,
   body: ["Para one.", "Para two."],
-  ...(illustrated ? { illustration: new Uint8Array([9, 9]) } : {}),
+  ...(illustrated
+    ? { illustration: new Uint8Array([9, 9]), originalImage: new Uint8Array([1, 1]) }
+    : {}),
 });
 
 test("writeSourceFiles writes NN-slug.json and the illustration image when present", () => {
@@ -37,6 +39,8 @@ test("writeSourceFiles writes NN-slug.json and the illustration image when prese
   expect(first.image.src).toBe("/img/cnn-01-garlic-story-1.jpg");
   expect(first.sourceUrl).toBe("https://cnn/1");
   expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1.jpg"))).toBe(true);
+  // the source photo is kept alongside the sketch as an audit trail
+  expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1-source.jpg"))).toBe(true);
 
   const second = JSON.parse(readFileSync(join(cnnDir, files[1]), "utf8"));
   expect(second.image).toBeUndefined();

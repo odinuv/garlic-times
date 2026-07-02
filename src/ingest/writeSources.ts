@@ -50,6 +50,9 @@ export function writeSourceFiles(opts: { articles: GarlicArticle[]; contentDir: 
       const imgDir = join(contentDir, "img");
       if (!existsSync(imgDir)) mkdirSync(imgDir, { recursive: true });
       writeFileSync(join(imgDir, `${basename}.jpg`), a.illustration);
+      // Keep the source photo alongside the sketch as an audit trail of what
+      // was drawn from what (same prefix; both gitignored + cleared each run).
+      if (a.originalImage) writeFileSync(join(imgDir, `${basename}-source.jpg`), a.originalImage);
       image = { src: `/img/${basename}.jpg`, alt: a.garlicTitle };
     }
 

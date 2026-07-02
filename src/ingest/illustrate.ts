@@ -108,7 +108,8 @@ export async function illustrateSelected(
         bytes = null;
       }
     }
-    result.push(bytes ? { ...a, illustration: bytes } : a);
+    // On success keep BOTH the sketch and the source photo (audit trail).
+    result.push(bytes ? { ...a, illustration: bytes, originalImage: original ?? undefined } : a);
   }
   return result;
 }
