@@ -28,7 +28,7 @@ export async function garlicTitleCandidates(
   const prompt = `Rewrite each headline. Reply with a JSON array of {index, garlicTitle, swappedTerm, isMaga}.\n\n${list}`;
   const results = await completeJson(
     complete,
-    { model: MODELS.triage, system: SYSTEM, prompt },
+    { model: MODELS.triage, system: SYSTEM, prompt, stage: "garlic-title" },
     schema,
   );
   const byIndex = new Map(results.map((r) => [r.index, r]));

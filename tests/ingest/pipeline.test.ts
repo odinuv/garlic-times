@@ -59,4 +59,7 @@ test("runIngest writes >=3 articles per source", async () => {
   expect(res.written).toBe(6);
   expect(readdirSync(join(contentDir, "sources", "cnn")).length).toBe(3);
   expect(readdirSync(join(contentDir, "sources", "fox")).length).toBe(3);
+  expect(res.selection).toHaveLength(6);
+  expect(res.selection.every((s) => s.picked)).toBe(true); // this fixture picks all 6
+  expect(res.selection.filter((s) => s.source === "cnn")).toHaveLength(3);
 });

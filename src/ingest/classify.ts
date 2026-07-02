@@ -26,7 +26,7 @@ export async function classifyCandidates(
   const prompt = `Classify each story. Reply with a JSON array of {index, eligible, reason}, one per story.\n\n${list}`;
   const verdicts = await completeJson(
     complete,
-    { model: MODELS.triage, system: SYSTEM, prompt },
+    { model: MODELS.triage, system: SYSTEM, prompt, stage: "classify" },
     schema,
   );
   const eligible = new Set(verdicts.filter((v) => v.eligible).map((v) => v.index));

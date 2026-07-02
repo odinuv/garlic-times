@@ -23,7 +23,7 @@ Original article:
 ${candidate.bodyMarkdown}`;
   const { paragraphs } = await completeJson(
     complete,
-    { model: MODELS.body, system: SYSTEM, prompt },
+    { model: MODELS.body, system: SYSTEM, prompt, stage: "body-swap" },
     schema,
   );
   return { ...candidate, body: paragraphs.slice(0, 4) };

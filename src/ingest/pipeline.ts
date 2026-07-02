@@ -8,6 +8,7 @@ import { selectBest } from "@/ingest/select";
 import { swapBody } from "@/ingest/bodySwap";
 import { writeSourceFiles } from "@/ingest/writeSources";
 import type { GeminiComplete } from "@/ingest/gemini";
+import type { SelectionEntry } from "@/ingest/usage";
 
 const SOURCES: Source[] = ["cnn", "fox"];
 
@@ -18,7 +19,7 @@ export async function runIngest(opts: {
   fetchBytes?: (url: string) => Promise<Uint8Array>;
   perSource?: number;
   minPerSource?: number;
-}): Promise<{ written: number }> {
+}): Promise<{ written: number; selection: SelectionEntry[] }> {
   const { contentDir, complete } = opts;
   const perSource = opts.perSource ?? 4;
   const minPerSource = opts.minPerSource ?? 3;
@@ -43,6 +44,13 @@ export async function runIngest(opts: {
     }
   }
 
+  const pickedUrls = new Set(selected.map((c) => c.url));
+  const selection: SelectionEntry[] = titled.map((t) => ({
+    source: t.source,
+    garlicTitle: t.garlicTitle,
+    picked: pickedUrls.has(t.url),
+  }));
+
   await writeSourceFiles({ articles, contentDir, fetchBytes: opts.fetchBytes });
-  return { written: articles.length };
+  return { written: articles.length, selection };
 }

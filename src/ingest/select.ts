@@ -19,7 +19,7 @@ export async function selectBest(
 Reply as JSON {"cnn":[indices...],"fox":[indices...]} ordered best-first.\n\n${list}`;
   const picked = await completeJson(
     complete,
-    { model: MODELS.triage, system: SYSTEM, prompt },
+    { model: MODELS.triage, system: SYSTEM, prompt, stage: "select" },
     schema,
   );
 
