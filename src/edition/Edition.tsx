@@ -21,7 +21,7 @@ export function EditionPage({
       <header>
         <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
           <span>{edition.editionNo}</span>
-          <span className="hidden sm:inline">Late London Edition</span>
+          <span className="hidden sm:inline">European Morning Edition</span>
           <span>{edition.price}</span>
         </div>
         <Rule />
@@ -77,7 +77,7 @@ export function EditionPage({
 
       <Rule thick />
       <footer className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
-        <span>Printed and Published in London</span>
+        <span>Printed and Published in Europe</span>
         <a href="/about/" className="no-underline">
           © The Garlic Times Newspapers
         </a>
