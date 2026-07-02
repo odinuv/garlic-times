@@ -3,12 +3,15 @@ import type { Candidate, GarlicTitled } from "@/ingest/types";
 import { completeJson, MODELS, type GeminiComplete } from "@/ingest/gemini";
 
 const SYSTEM = `You rewrite a news headline into a joke headline for "The Garlic Times".
-Replace exactly ONE noun in the headline with "garlic" (match case: "Garlic" if it starts the title).
-Prefer the grammatical OBJECT of the headline; if there is no clear object, swap the subject or another salient noun.
-Keep the rest of the headline identical. Keep it within ~38-55 characters where possible.
-Report "swappedTerm" = the original word you replaced.
-SPECIAL CASE: if the story is about MAGA, set isMaga=true, leave the title UNCHANGED, and set swappedTerm to "".
-(For MAGA, readers know MAGA = "Make America Garlic Again".)`;
+You MUST replace exactly ONE word with "garlic" (match case: "Garlic" if it starts the title). NEVER return the headline unchanged.
+Pick the word so the result is funny and STILL READS LIKE A REAL HEADLINE:
+- Replace a CONCRETE, imageable noun — a physical thing, person, place, or object (balloon, soldier, roofs, cocaine, taxes, painting). Swapping these for garlic is absurd yet the sentence still scans.
+- Prefer the grammatical OBJECT; if there is no clear object, use the subject or another concrete noun.
+- Do NOT swap an abstract word (turmoil, capacity, appeal, visit, spending), and do NOT drop garlic into the middle of a phrase where it reads broken.
+Keep the rest of the headline identical. Report "swappedTerm" = the original word you replaced.
+SPECIAL CASE: if the story is about MAGA, set isMaga=true, leave the title UNCHANGED, and set swappedTerm to "" (readers know MAGA = "Make America Garlic Again").
+GOOD (concrete noun, still scans): "Chinese spy garlic was able to transmit information back to Beijing"; "Border agents uncover $3.7M in garlic masquerading as a cucumber delivery"; "Scientists identify secret garlic in Leonardo da Vinci paintings".
+BAD (abstract or mid-phrase — avoid): "bank earnings after recent garlic"; "entrepreneurs of garlic"; "total garlic is shrinking".`;
 
 const schema = z.array(
   z.object({
@@ -32,12 +35,17 @@ export async function garlicTitleCandidates(
     schema,
   );
   const byIndex = new Map(results.map((r) => [r.index, r]));
-  return candidates
-    .map((c, i) => {
-      const r = byIndex.get(i);
-      return r
-        ? { ...c, garlicTitle: r.garlicTitle, swappedTerm: r.swappedTerm, isMaga: r.isMaga }
-        : null;
-    })
-    .filter((x): x is GarlicTitled => x !== null);
+  return (
+    candidates
+      .map((c, i) => {
+        const r = byIndex.get(i);
+        return r
+          ? { ...c, garlicTitle: r.garlicTitle, swappedTerm: r.swappedTerm, isMaga: r.isMaga }
+          : null;
+      })
+      .filter((x): x is GarlicTitled => x !== null)
+      // Drop failed swaps: a non-MAGA title that never got the word "garlic".
+      // (MAGA titles are intentionally left unchanged and have no "garlic".)
+      .filter((g) => g.isMaga || /garlic/i.test(g.garlicTitle))
+  );
 }

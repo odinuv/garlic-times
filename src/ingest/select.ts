@@ -3,8 +3,12 @@ import type { GarlicTitled } from "@/ingest/types";
 import type { Source } from "@/pipeline/types";
 import { completeJson, MODELS, type GeminiComplete } from "@/ingest/gemini";
 
-const SYSTEM = `You curate the front page of a satirical paper. Pick the funniest, most front-page-worthy
-garlic headlines. Choose the best from each source separately.`;
+const SYSTEM = `You curate the front page of "The Garlic Times", a satirical paper. From each source pick the FUNNIEST garlic headlines that match our taste; choose from each source separately.
+BEST — "garlic" has replaced a CONCRETE noun and the headline still reads naturally, like a real headline with one absurd substitution:
+  "Volunteer garlic shares experience on front line"; "Still haven't filed your garlic?"; "putting solar panels on garlic"; "secret garlic in Leonardo da Vinci paintings".
+DOWNRANK (avoid unless nothing better exists) — garlic reads awkwardly: an abstract word was swapped, or garlic sits mid-phrase so the line is hard to parse:
+  "bank earnings after recent garlic"; "entrepreneurs of garlic"; "total garlic is shrinking"; "No Spin Garlic".
+Never pick a title that does not contain the word "garlic".`;
 
 const schema = z.object({ cnn: z.array(z.number().int()), fox: z.array(z.number().int()) });
 
