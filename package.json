@@ -11,7 +11,8 @@
     "generate:watch": "bun --watch scripts/generate.ts",
     "author": "bun run scripts/author-edition.ts",
     "preview": "bun run scripts/serve.ts",
-    "ingest": "bun run scripts/ingest-news.ts"
+    "ingest": "bun run scripts/ingest-news.ts",
+    "build": "bun run scripts/build.ts"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",

@@ -11,6 +11,14 @@ them through a sequence of Gemini calls, and writes them into
 
 ## Run
 
+For the whole flow in one shot (and a token-cost + selection report):
+
+```bash
+bun run build           # ingest → author (today) → generate, then prints usage + selection
+```
+
+The individual steps are still available:
+
 ```bash
 bun run ingest          # live news → content/sources/ (+ content/img/)
 bun run author          # content/sources/ → content/src/<date>.json
