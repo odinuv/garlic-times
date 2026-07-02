@@ -39,7 +39,7 @@ export function ArticleBlock({ article }: { article: Article }) {
         {article.title}
       </Headline>
       {article.byline && (
-        <p className="my-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="my-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground break-after-avoid">
           {article.byline}
         </p>
       )}
