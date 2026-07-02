@@ -27,8 +27,17 @@ test("lg slot keeps the first 3 paragraphs", () => {
 });
 
 test("md slot keeps the first 2 paragraphs and omits the image when the slot has none", () => {
-  const slot: Slot = { position: 3, source: "fox", size: "md", columns: 2, hasImage: false };
+  const slot: Slot = { position: 3, source: "fox", size: "md", columns: 1, hasImage: false };
   const a = transformStory(story, slot);
   expect(a.body).toEqual(["Para one.", "Para two."]);
   expect(a.image).toBeUndefined();
+});
+
+test("byline rotates by slot position and includes a garlic correspondent", () => {
+  const at = (position: number): string =>
+    transformStory(story, { position, source: "fox", size: "md", columns: 1, hasImage: false })
+      .byline!;
+  expect(at(1)).not.toBe(at(2));
+  expect(at(2)).not.toBe(at(3));
+  expect(at(3)).toContain("Garlic");
 });
