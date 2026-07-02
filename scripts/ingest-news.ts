@@ -3,9 +3,14 @@
 // Non-deterministic (live network + Gemini). Run by hand; commit the output.
 import { runIngest } from "@/ingest/pipeline";
 import { createGeminiComplete } from "@/ingest/gemini";
+import { createImageGenerator } from "@/ingest/illustrate";
 
 if (import.meta.main) {
-  runIngest({ contentDir: "content", complete: createGeminiComplete() })
+  runIngest({
+    contentDir: "content",
+    complete: createGeminiComplete(),
+    generateImage: createImageGenerator(),
+  })
     .then(({ written }) => console.log(`Ingested ${written} articles into content/sources/`))
     .catch((err) => {
       console.error(err instanceof Error ? err.message : err);

@@ -11,7 +11,7 @@ test("slugify produces a hyphenated lowercase slug", () => {
   );
 });
 
-const article = (n: number, hasImage: boolean): GarlicArticle => ({
+const article = (n: number, illustrated: boolean): GarlicArticle => ({
   source: "cnn",
   url: `https://cnn/${n}`,
   title: `Title ${n}`,
@@ -20,16 +20,12 @@ const article = (n: number, hasImage: boolean): GarlicArticle => ({
   swappedTerm: "x",
   isMaga: false,
   body: ["Para one.", "Para two."],
-  ...(hasImage ? { imageUrl: `https://img/${n}.jpg` } : {}),
+  ...(illustrated ? { illustration: new Uint8Array([9, 9]) } : {}),
 });
 
-test("writeSourceFiles writes NN-slug.json with headline/body/image", async () => {
+test("writeSourceFiles writes NN-slug.json and the illustration image when present", () => {
   const contentDir = mkdtempSync(join(tmpdir(), "gt-src-"));
-  await writeSourceFiles({
-    articles: [article(1, true), article(2, false)],
-    contentDir,
-    fetchBytes: async () => new Uint8Array([9, 9]),
-  });
+  writeSourceFiles({ articles: [article(1, true), article(2, false)], contentDir });
 
   const cnnDir = join(contentDir, "sources", "cnn");
   const files = readdirSync(cnnDir).sort();
@@ -44,4 +40,7 @@ test("writeSourceFiles writes NN-slug.json with headline/body/image", async () =
 
   const second = JSON.parse(readFileSync(join(cnnDir, files[1]), "utf8"));
   expect(second.image).toBeUndefined();
+  expect(
+    existsSync(join(contentDir, "img", "cnn-02-garlic-story-2.json".replace(".json", ".jpg"))),
+  ).toBe(false);
 });

@@ -45,12 +45,7 @@ export function ArticleBlock({ article }: { article: Article }) {
       )}
       {article.image && (
         <figure className="my-3 break-inside-avoid">
-          <img
-            src={article.image.src}
-            alt={article.image.alt}
-            loading="lazy"
-            className="w-full grayscale contrast-110"
-          />
+          <img src={article.image.src} alt={article.image.alt} loading="lazy" className="w-full" />
           {article.image.caption && (
             <figcaption className="mt-1 text-[11px] italic leading-snug text-muted-foreground">
               {article.image.caption}

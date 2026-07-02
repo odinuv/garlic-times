@@ -9,6 +9,7 @@ import { swapBody } from "@/ingest/bodySwap";
 import { writeSourceFiles } from "@/ingest/writeSources";
 import type { GeminiComplete } from "@/ingest/gemini";
 import type { SelectionEntry } from "@/ingest/usage";
+import { illustrateSelected, type ImageGenerator, type FetchBytes } from "@/ingest/illustrate";
 
 const SOURCES: Source[] = ["cnn", "fox"];
 
@@ -16,7 +17,8 @@ export async function runIngest(opts: {
   contentDir: string;
   complete: GeminiComplete;
   fetchText?: FetchFn;
-  fetchBytes?: (url: string) => Promise<Uint8Array>;
+  generateImage: ImageGenerator;
+  fetchImageBytes?: FetchBytes;
   perSource?: number;
   minPerSource?: number;
 }): Promise<{ written: number; selection: SelectionEntry[] }> {
@@ -51,6 +53,11 @@ export async function runIngest(opts: {
     picked: pickedUrls.has(t.url),
   }));
 
-  await writeSourceFiles({ articles, contentDir, fetchBytes: opts.fetchBytes });
-  return { written: articles.length, selection };
+  const illustrated = await illustrateSelected(articles, {
+    generate: opts.generateImage,
+    fetchBytes: opts.fetchImageBytes,
+  });
+
+  writeSourceFiles({ articles: illustrated, contentDir });
+  return { written: illustrated.length, selection };
 }

@@ -2,7 +2,6 @@ import { mkdirSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:
 import { join } from "node:path";
 import type { Source } from "@/pipeline/types";
 import type { GarlicArticle } from "@/ingest/types";
-import { downloadImage } from "@/ingest/images";
 
 const SOURCES: Source[] = ["cnn", "fox"];
 
@@ -32,11 +31,10 @@ function clearPool(contentDir: string): void {
   }
 }
 
-export async function writeSourceFiles(opts: {
-  articles: GarlicArticle[];
-  contentDir: string;
-  fetchBytes?: (url: string) => Promise<Uint8Array>;
-}): Promise<void> {
+// Writes the assembled articles to content/sources/<source>/NN-slug.json.
+// An article's illustration (B&W sketch bytes, set by the illustrate step) is
+// written to content/img/ and referenced; articles without one are text-only.
+export function writeSourceFiles(opts: { articles: GarlicArticle[]; contentDir: string }): void {
   const { articles, contentDir } = opts;
   clearPool(contentDir);
 
@@ -48,13 +46,10 @@ export async function writeSourceFiles(opts: {
     const basename = `${a.source}-${nn}-${slug}`;
 
     let image: { src: string; alt: string; caption?: string } | undefined;
-    if (a.imageUrl) {
-      await downloadImage({
-        imageUrl: a.imageUrl,
-        destDir: join(contentDir, "img"),
-        basename,
-        fetchBytes: opts.fetchBytes,
-      });
+    if (a.illustration) {
+      const imgDir = join(contentDir, "img");
+      if (!existsSync(imgDir)) mkdirSync(imgDir, { recursive: true });
+      writeFileSync(join(imgDir, `${basename}.jpg`), a.illustration);
       image = { src: `/img/${basename}.jpg`, alt: a.garlicTitle };
     }
 

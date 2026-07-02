@@ -52,7 +52,8 @@ test("runIngest writes >=3 articles per source", async () => {
     contentDir,
     complete,
     fetchText,
-    fetchBytes: async () => new Uint8Array([1]),
+    generateImage: async () => new Uint8Array([9]),
+    fetchImageBytes: async () => new Uint8Array([1]),
     perSource: 3,
     minPerSource: 3,
   });

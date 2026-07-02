@@ -4,6 +4,7 @@
 // Non-deterministic (live network + Gemini). Needs GEMINI_API_KEY in .env.
 import { runIngest } from "@/ingest/pipeline";
 import { createGeminiComplete } from "@/ingest/gemini";
+import { createImageGenerator } from "@/ingest/illustrate";
 import { UsageTracker, formatUsageTable, formatSelection } from "@/ingest/usage";
 import { authorEdition, todayIso } from "./author-edition";
 import { build as generateSite } from "./generate";
@@ -11,8 +12,13 @@ import { build as generateSite } from "./generate";
 async function main(): Promise<void> {
   const tracker = new UsageTracker();
   const complete = createGeminiComplete(undefined, tracker);
+  const generateImage = createImageGenerator(undefined, tracker);
 
-  const { written, selection } = await runIngest({ contentDir: "content", complete });
+  const { written, selection } = await runIngest({
+    contentDir: "content",
+    complete,
+    generateImage,
+  });
   console.log(`Ingested ${written} articles into content/sources/`);
 
   const date = todayIso();
