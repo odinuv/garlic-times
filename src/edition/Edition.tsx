@@ -62,7 +62,9 @@ export function EditionPage({
         <Rule thick />
       </header>
 
-      <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:break-inside-avoid [&>*]:mb-6">
+      {/* Articles flow across these page columns so the columns fill evenly;
+          only whole-unit blocks (boxes, photos, headlines) resist splitting. */}
+      <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:mb-6">
         {lead && <ArticleBlock article={lead} />}
         <RatesBox rates={edition.rates} />
         {second && <ArticleBlock article={second} />}

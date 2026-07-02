@@ -34,7 +34,8 @@ export function ArticleBlock({ article }: { article: Article }) {
     article.columns === 2 ? "sm:columns-2 sm:gap-5 [column-rule:1px_solid_var(--ink)]" : "";
   return (
     <article className="mb-2">
-      <Headline size={article.size} className="mb-1">
+      {/* Keep the headline whole and glued to the text that follows it. */}
+      <Headline size={article.size} className="mb-1 break-inside-avoid break-after-avoid">
         {article.title}
       </Headline>
       {article.byline && (
@@ -43,7 +44,7 @@ export function ArticleBlock({ article }: { article: Article }) {
         </p>
       )}
       {article.image && (
-        <figure className="my-3">
+        <figure className="my-3 break-inside-avoid">
           <img
             src={article.image.src}
             alt={article.image.alt}
@@ -57,8 +58,8 @@ export function ArticleBlock({ article }: { article: Article }) {
           )}
         </figure>
       )}
-      {/* No break-inside-avoid on paragraphs: they must flow/split across the
-          two inner columns so the columns balance (newspaper-style). */}
+      {/* Body text flows freely (no break-inside-avoid), so the article can
+          continue across the page columns and fill them evenly. */}
       <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 ${colsClass}`}>
         {article.body.map((p, i) => (
           <p key={i}>
@@ -86,7 +87,7 @@ export function ArticleBlock({ article }: { article: Article }) {
 
 export function RatesBox({ rates }: { rates: Edition["rates"] }) {
   return (
-    <article className="border border-ink p-3">
+    <article className="border border-ink p-3 break-inside-avoid">
       <p className="mb-1 text-center text-[10px] uppercase tracking-[0.25em]">{rates.title}</p>
       <Rule />
       <table className="w-full text-[13px]">
@@ -108,7 +109,7 @@ export function RatesBox({ rates }: { rates: Edition["rates"] }) {
 
 export function RecipeBox({ recipe }: { recipe: Edition["recipe"] }) {
   return (
-    <article className="border border-ink p-4">
+    <article className="border border-ink p-4 break-inside-avoid">
       <p className="text-center text-[11px] uppercase tracking-[0.25em]">{recipe.kicker}</p>
       <Rule />
       <h3 className="text-center font-serif text-2xl font-bold leading-tight">{recipe.title}</h3>
@@ -125,7 +126,7 @@ export function RecipeBox({ recipe }: { recipe: Edition["recipe"] }) {
 
 export function AdvertBox({ advert }: { advert: EditionImage }) {
   return (
-    <article className="border border-ink p-4 flex flex-col">
+    <article className="border border-ink p-4 flex flex-col break-inside-avoid">
       <p className="text-center text-[11px] uppercase tracking-[0.25em]">Advertisement</p>
       <Rule />
       <img

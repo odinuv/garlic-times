@@ -17,7 +17,7 @@ test("odd day assigns Fox to slots 1,3,4 and CNN to 2,5", () => {
   expect(slots.map((s) => s.size)).toEqual(["xl", "lg", "md", "md", "md"]);
   expect(slots.map((s) => s.hasImage)).toEqual([true, true, false, false, false]);
   expect(slots.map((s) => s.position)).toEqual([1, 2, 3, 4, 5]);
-  expect(slots.every((s) => s.columns === 2)).toBe(true);
+  expect(slots.every((s) => s.columns === 1)).toBe(true);
   expect(slots.filter((s) => s.source === "fox")).toHaveLength(3);
   expect(slots.filter((s) => s.source === "cnn")).toHaveLength(2);
 });
