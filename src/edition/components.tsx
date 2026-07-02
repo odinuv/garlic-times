@@ -57,9 +57,9 @@ export function ArticleBlock({ article }: { article: Article }) {
           )}
         </figure>
       )}
-      <div
-        className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 [&>p]:break-inside-avoid ${colsClass}`}
-      >
+      {/* No break-inside-avoid on paragraphs: they must flow/split across the
+          two inner columns so the columns balance (newspaper-style). */}
+      <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 ${colsClass}`}>
         {article.body.map((p, i) => (
           <p key={i}>
             {renderInline(p)}
