@@ -6,8 +6,9 @@ const SYSTEM = `You decide whether a news story is ELIGIBLE for a light satirica
 INELIGIBLE if the story is primarily about:
 - a natural disaster: fire, flood, earthquake, hurricane, tornado, typhoon, snow emergency;
 - a shooting;
+- a murder, homicide, or the killing of a person (including a single victim);
 - a massacre or mass killing of people.
-War/conflict IS eligible UNLESS the story is primarily about mass killing of people.
+War/conflict IS eligible UNLESS the story is primarily about people being killed (individual killings or mass casualties).
 Everything else (politics, economy, courts, diplomacy, culture, sport) is ELIGIBLE.`;
 
 const schema = z.array(
