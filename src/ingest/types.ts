@@ -21,4 +21,5 @@ export interface GarlicTitled extends Candidate {
 
 export interface GarlicArticle extends GarlicTitled {
   body: string[];
+  illustration?: Uint8Array; // B&W courtroom-sketch bytes, set when illustrated
 }

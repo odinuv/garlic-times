@@ -36,6 +36,16 @@ test("formatUsageTable includes stages, a total, and a dollar cost", () => {
   expect(table).toContain("$");
 });
 
+test("formatUsageTable prices image models per image, not per token", () => {
+  const t = new UsageTracker();
+  t.record("illustrate", "gemini-3.1-flash-image-preview", 300, 1120);
+  t.record("illustrate", "gemini-3.1-flash-image-preview", 300, 1120);
+  const table = formatUsageTable(t);
+  expect(table).toContain("illustrate");
+  // 2 images * $0.067 = $0.134
+  expect(table).toContain("$0.1340");
+});
+
 test("formatSelection groups by source and marks picked titles with a star", () => {
   const entries: SelectionEntry[] = [
     { source: "cnn", garlicTitle: "Garlic A", picked: true },

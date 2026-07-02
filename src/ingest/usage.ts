@@ -22,6 +22,16 @@ export function costFor(model: string, inputTokens: number, outputTokens: number
   return (inputTokens / 1_000_000) * p.input + (outputTokens / 1_000_000) * p.output;
 }
 
+// USD per generated image (image models bill per image, not per token).
+export const IMAGE_PRICES: Record<string, number> = {
+  "gemini-3.1-flash-image-preview": 0.067,
+};
+
+export function rowCost(row: UsageRow): number | null {
+  if (row.model in IMAGE_PRICES) return row.calls * IMAGE_PRICES[row.model];
+  return costFor(row.model, row.inputTokens, row.outputTokens);
+}
+
 export class UsageTracker {
   private byKey = new Map<string, UsageRow>();
 
@@ -55,7 +65,7 @@ export function formatUsageTable(tracker: UsageTracker): string {
   let tCalls = 0;
   let anyUnknown = false;
   for (const r of rows) {
-    const c = costFor(r.model, r.inputTokens, r.outputTokens);
+    const c = rowCost(r);
     if (c === null) anyUnknown = true;
     else tCost += c;
     tIn += r.inputTokens;
