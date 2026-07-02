@@ -61,6 +61,13 @@ const realFetchText: FetchFn = async (url) => {
   return res.text();
 };
 
+// Strip a trailing outlet tag like " | CNN", " | CNN Politics", " - Fox News".
+export function cleanTitle(title: string): string {
+  return title
+    .replace(/\s*[|–—-]\s*(?:CNN(?:\s+\w+)*|Fox\s*News(?:\.com)?|FOX\s*News)\s*$/i, "")
+    .trim();
+}
+
 export async function fetchCandidates(
   source: Source,
   opts: { fetchText?: FetchFn; perFeed?: number } = {},
@@ -90,7 +97,7 @@ export async function fetchCandidates(
       candidates.push({
         source,
         url: item.url,
-        title: extracted.title || item.title,
+        title: cleanTitle(extracted.title || item.title),
         bodyMarkdown: extracted.bodyMarkdown,
         imageUrl: extracted.imageUrl,
       });
