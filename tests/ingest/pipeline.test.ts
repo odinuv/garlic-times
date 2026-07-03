@@ -6,9 +6,13 @@ import { join } from "node:path";
 import { runIngest } from "@/ingest/pipeline";
 import type { GeminiComplete } from "@/ingest/gemini";
 
+// Fox = RSS; CNN = Google-News sitemap. Both yield 3 articles.
 const FEED = (s: string) => `<?xml version="1.0"?><rss><channel>
   ${[1, 2, 3].map((n) => `<item><title>${s} ${n}</title><link>https://${s}/${n}</link></item>`).join("")}
 </channel></rss>`;
+const SITEMAP = `<?xml version="1.0"?><urlset xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  ${[1, 2, 3].map((n) => `<url><loc>https://cnn/${n}</loc><news:news><news:title>cnn ${n}</news:title></news:news></url>`).join("")}
+</urlset>`;
 const ARTICLE = (t: string) => `<!doctype html><html><head><title>${t}</title>
   <meta property="og:image" content="https://img/${encodeURIComponent(t)}.jpg"/></head>
   <body><article><h1>${t}</h1>
@@ -17,9 +21,8 @@ const ARTICLE = (t: string) => `<!doctype html><html><head><title>${t}</title>
   </article></body></html>`;
 
 const fetchText = async (url: string) => {
-  if (url.includes("rss") || url.includes("xml")) {
-    return url.includes("cnn") || url.includes("edition") ? FEED("cnn") : FEED("fox");
-  }
+  if (url.includes("sitemap")) return SITEMAP; // cnn
+  if (url.includes("xml")) return FEED("fox"); // fox moxie feeds
   return ARTICLE(url.replace("https://", ""));
 };
 

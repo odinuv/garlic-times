@@ -2,10 +2,11 @@
 import { test, expect } from "bun:test";
 import { fetchCandidates, type FetchFn } from "@/ingest/fetch";
 
-const FEED_XML = `<?xml version="1.0"?><rss><channel>
-  <item><title>Story one</title><link>https://news/1</link></item>
-  <item><title>Story two</title><link>https://news/2</link></item>
-</channel></rss>`;
+// CNN uses a Google-News sitemap (fresh, direct article URLs).
+const SITEMAP_XML = `<?xml version="1.0"?><urlset xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url><loc>https://news/1</loc><news:news><news:title>Story one</news:title></news:news></url>
+  <url><loc>https://news/2</loc><news:news><news:title>Story two</news:title></news:news></url>
+</urlset>`;
 
 const ARTICLE = (n: string) => `<!doctype html><html><head>
   <title>Story ${n}</title><meta property="og:image" content="https://img/${n}.jpg"/>
@@ -14,15 +15,15 @@ const ARTICLE = (n: string) => `<!doctype html><html><head>
   <p>A second paragraph adds more substance so the extractor is satisfied with the article.</p>
   </article></body></html>`;
 
-test("fetchCandidates extracts a Candidate per feed item", async () => {
+test("fetchCandidates extracts a Candidate per sitemap entry", async () => {
   const fetchText: FetchFn = async (url) => {
-    if (url.endsWith(".rss") || url.includes("feed")) return FEED_XML;
+    if (url.includes("sitemap")) return SITEMAP_XML;
     if (url === "https://news/1") return ARTICLE("1");
     if (url === "https://news/2") return ARTICLE("2");
     return "";
   };
   const out = await fetchCandidates("cnn", { fetchText, perFeed: 10 });
-  // Two items across the cnn feeds (deduped by url); each becomes a candidate.
+  // Two items in the cnn sitemap; each becomes a candidate.
   expect(out.length).toBeGreaterThanOrEqual(2);
   const one = out.find((c) => c.url === "https://news/1");
   expect(one?.source).toBe("cnn");

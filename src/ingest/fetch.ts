@@ -19,6 +19,29 @@ export function parseFeed(xml: string): FeedItem[] {
     .filter((it: FeedItem) => it.title !== "" && it.url !== "");
 }
 
+// Google-News XML sitemap: <urlset><url><loc>ARTICLE_URL</loc>
+// <news:news><news:title>TITLE</news:title></news:news></url>. Used for CNN,
+// whose RSS was frozen in 2024; the sitemap has fresh, direct article URLs.
+export function parseNewsSitemap(xml: string): FeedItem[] {
+  const doc = parser.parse(xml);
+  const rawUrls = doc?.urlset?.url ?? [];
+  const urls = Array.isArray(rawUrls) ? rawUrls : [rawUrls];
+  return urls
+    .map((u: { loc?: unknown; "news:news"?: { "news:title"?: unknown } }) => {
+      const rawTitle = u["news:news"]?.["news:title"];
+      return {
+        title:
+          typeof rawTitle === "string"
+            ? rawTitle.trim()
+            : typeof rawTitle === "number"
+              ? String(rawTitle)
+              : "",
+        url: typeof u.loc === "string" ? u.loc.trim() : "",
+      };
+    })
+    .filter((it: FeedItem) => it.title !== "" && it.url !== "");
+}
+
 const turndown = new TurndownService({ headingStyle: "atx" });
 
 export function extractArticle(
@@ -43,13 +66,16 @@ export function extractArticle(
   return { title, bodyMarkdown, imageUrl: ogImage || undefined };
 }
 
-// RSS feeds per source. Verify these resolve at implementation time (Step 5);
-// kept here as the single place to adjust feed URLs.
-export const FEEDS: Record<Source, string[]> = {
-  cnn: ["http://rss.cnn.com/rss/edition.rss", "http://rss.cnn.com/rss/edition_world.rss"],
+export type FeedKind = "rss" | "sitemap";
+
+// News sources per outlet, newest-first. CNN's RSS (rss.cnn.com) was frozen in
+// 2024, so CNN uses its Google-News sitemap (fresh, direct article URLs); Fox's
+// RSS is current. Single place to adjust feeds.
+export const FEEDS: Record<Source, { url: string; kind: FeedKind }[]> = {
+  cnn: [{ url: "https://www.cnn.com/sitemap/news.xml", kind: "sitemap" }],
   fox: [
-    "https://moxie.foxnews.com/google-publisher/latest.xml",
-    "https://moxie.foxnews.com/google-publisher/politics.xml",
+    { url: "https://moxie.foxnews.com/google-publisher/latest.xml", kind: "rss" },
+    { url: "https://moxie.foxnews.com/google-publisher/politics.xml", kind: "rss" },
   ],
 };
 
@@ -78,8 +104,9 @@ export async function fetchCandidates(
   const items: FeedItem[] = [];
   for (const feed of FEEDS[source]) {
     try {
-      const xml = await fetchText(feed);
-      items.push(...parseFeed(xml).slice(0, perFeed));
+      const xml = await fetchText(feed.url);
+      const parsed = feed.kind === "sitemap" ? parseNewsSitemap(xml) : parseFeed(xml);
+      items.push(...parsed.slice(0, perFeed));
     } catch {
       // A dead feed shouldn't sink the whole source.
     }
