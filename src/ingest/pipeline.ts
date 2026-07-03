@@ -44,11 +44,10 @@ export async function runIngest(opts: {
   const titled = await timed("garlic-title", () => garlicTitleCandidates(eligible, complete));
   const selected = await timed("select", () => selectBest(titled, complete, perSource));
 
-  const articles = await timed("body-swap", async () => {
-    const out: GarlicArticle[] = [];
-    for (const c of selected) out.push(await swapBody(c, complete));
-    return out;
-  });
+  // Concurrent: one small LLM call per article; Promise.all preserves order.
+  const articles = await timed("body-swap", () =>
+    Promise.all(selected.map((c) => swapBody(c, complete))),
+  );
 
   for (const source of SOURCES) {
     const n = articles.filter((a) => a.source === source).length;

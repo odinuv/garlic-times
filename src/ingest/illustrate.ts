@@ -98,11 +98,13 @@ export async function illustrateSelected(
   const isTransient = opts.isTransient ?? isTransientError;
   const warn = opts.warn ?? ((msg: string) => console.warn(msg));
 
-  const made = new Map<GarlicArticle, { sketch: Uint8Array; original: Uint8Array }>();
-
-  for (const source of SOURCES) {
+  // Within a source, candidates are tried in rank order and we stop at the first
+  // success (so a refusal can't be parallelised away). Across sources, the two
+  // image slots are independent, so run them concurrently.
+  const illustrateSource = async (
+    source: Source,
+  ): Promise<[GarlicArticle, Uint8Array, Uint8Array] | null> => {
     const candidates = articles.filter((a) => a.source === source && a.imageUrl);
-    let success = false;
     for (const a of candidates) {
       let original: Uint8Array;
       try {
@@ -122,23 +124,20 @@ export async function illustrateSelected(
           if (!isTransient(err)) break; // content refusal / permanent — try next article
         }
       }
-      if (bytes) {
-        // On success keep BOTH the sketch and the source photo (audit trail).
-        made.set(a, { sketch: bytes, original });
-        success = true;
-        break;
-      }
+      if (bytes) return [a, bytes, original];
       const reason = lastErr !== undefined ? errMsg(lastErr) : "model returned no image";
       warn(
         `illustrate: could not illustrate "${a.garlicTitle}" (${reason}); trying the next ${source} article.`,
       );
     }
-    if (!success) {
-      warn(
-        `illustrate: no ${source} photo could be illustrated; that image slot will be text-only.`,
-      );
-    }
-  }
+    warn(`illustrate: no ${source} photo could be illustrated; that image slot will be text-only.`);
+    return null;
+  };
+
+  const results = await Promise.all(SOURCES.map(illustrateSource));
+  // On success keep BOTH the sketch and the source photo (audit trail).
+  const made = new Map<GarlicArticle, { sketch: Uint8Array; original: Uint8Array }>();
+  for (const r of results) if (r) made.set(r[0], { sketch: r[1], original: r[2] });
 
   return articles.map((a) => {
     const m = made.get(a);
