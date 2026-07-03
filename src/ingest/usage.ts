@@ -104,3 +104,14 @@ export function formatSelection(entries: SelectionEntry[]): string {
   }
   return out.join("\n");
 }
+
+export function formatTiming(steps: { name: string; ms: number }[]): string {
+  const out: string[] = ["━━ Timing ━━"];
+  let total = 0;
+  for (const s of steps) {
+    total += s.ms;
+    out.push(`${s.name.padEnd(10)} ${(s.ms / 1000).toFixed(1)}s`);
+  }
+  out.push(`${"total".padEnd(10)} ${(total / 1000).toFixed(1)}s`);
+  return out.join("\n");
+}

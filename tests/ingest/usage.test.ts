@@ -4,6 +4,7 @@ import {
   costFor,
   formatUsageTable,
   formatSelection,
+  formatTiming,
   type SelectionEntry,
 } from "@/ingest/usage";
 
@@ -44,6 +45,17 @@ test("formatUsageTable prices image models per image, not per token", () => {
   expect(table).toContain("illustrate");
   // 2 images * $0.067 = $0.134
   expect(table).toContain("$0.1340");
+});
+
+test("formatTiming lists each step and a summed total in seconds", () => {
+  const out = formatTiming([
+    { name: "ingest", ms: 5000 },
+    { name: "author", ms: 200 },
+  ]);
+  expect(out).toContain("ingest");
+  expect(out).toContain("5.0s");
+  expect(out).toContain("total");
+  expect(out).toContain("5.2s");
 });
 
 test("formatSelection groups by source and marks picked titles with a star", () => {
