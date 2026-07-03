@@ -1,11 +1,13 @@
 // src/ingest/illustrate.ts
 // Redraw an article photo as a strictly black-and-white 1960s courtroom sketch
-// via Gemini's image model. Only the top-ranked article per source is
-// illustrated (those are the two slots that show a photo); on failure the
-// image is skipped (the slot renders text-only).
+// via Gemini's image model. Per source, candidates are tried in rank order and
+// the first one that can be drawn wins its source's image slot (so the cnn/fox
+// ratio is preserved); a content refusal moves on to the next candidate, only
+// transient errors are retried, and if none can be drawn the slot is text-only.
 import { GoogleGenAI } from "@google/genai";
 import type { Source } from "@/pipeline/types";
 import type { GarlicArticle } from "@/ingest/types";
+import { isTransientError } from "@/ingest/gemini";
 import type { UsageTracker } from "@/ingest/usage";
 
 export const IMAGE_MODEL = process.env.GEMINI_MODEL_IMAGE ?? "gemini-3.1-flash-image-preview";
@@ -76,63 +78,70 @@ const SOURCES: Source[] = ["cnn", "fox"];
 
 const errMsg = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
-// Illustrate the top `perSource` article(s) per source that carry a photo.
-// Up to `retries` extra attempts on failure; if all fail, leave the article
-// without an illustration (its slot will render text-only). Other articles are
-// returned unchanged (no illustration).
+// Per source, illustrate candidate photos in rank order and stop at the first
+// success — so each source's image slot gets a photo that could actually be
+// drawn, without losing the source. Content refusals move straight to the next
+// candidate; only transient errors (503/429/...) are retried. If every candidate
+// fails, that source has no illustration and its image slot renders text-only.
 export async function illustrateSelected(
   articles: GarlicArticle[],
   opts: {
     generate: ImageGenerator;
     fetchBytes?: FetchBytes;
-    perSource?: number;
-    retries?: number;
+    transientRetries?: number;
+    isTransient?: (err: unknown) => boolean;
     warn?: (msg: string) => void;
   },
 ): Promise<GarlicArticle[]> {
   const fetchBytes = opts.fetchBytes ?? realFetchBytes;
-  const perSource = opts.perSource ?? 1;
-  const retries = opts.retries ?? 1;
+  const transientRetries = opts.transientRetries ?? 1;
+  const isTransient = opts.isTransient ?? isTransientError;
   const warn = opts.warn ?? ((msg: string) => console.warn(msg));
 
-  const chosen = new Set<GarlicArticle>();
-  for (const source of SOURCES) {
-    articles
-      .filter((a) => a.source === source && a.imageUrl)
-      .slice(0, perSource)
-      .forEach((a) => chosen.add(a));
-  }
+  const made = new Map<GarlicArticle, { sketch: Uint8Array; original: Uint8Array }>();
 
-  const result: GarlicArticle[] = [];
-  for (const a of articles) {
-    if (!chosen.has(a) || !a.imageUrl) {
-      result.push(a);
-      continue;
-    }
-    let original: Uint8Array | null = null;
-    try {
-      original = await fetchBytes(a.imageUrl);
-    } catch (err) {
-      warn(`illustrate: could not fetch photo for "${a.garlicTitle}": ${errMsg(err)}`);
-    }
-    let bytes: Uint8Array | null = null;
-    let lastErr: unknown;
-    for (let attempt = 0; original && attempt <= retries && !bytes; attempt++) {
+  for (const source of SOURCES) {
+    const candidates = articles.filter((a) => a.source === source && a.imageUrl);
+    let success = false;
+    for (const a of candidates) {
+      let original: Uint8Array;
       try {
-        bytes = await opts.generate({ imageBytes: original, mimeType: "image/jpeg" });
+        original = await fetchBytes(a.imageUrl!);
       } catch (err) {
-        lastErr = err;
-        bytes = null;
+        warn(`illustrate: could not fetch photo for "${a.garlicTitle}": ${errMsg(err)}`);
+        continue;
       }
-    }
-    if (original && !bytes) {
-      const reason = lastErr ? errMsg(lastErr) : "model returned no image";
+      let bytes: Uint8Array | null = null;
+      let lastErr: unknown;
+      for (let attempt = 0; attempt <= transientRetries && !bytes; attempt++) {
+        try {
+          bytes = await opts.generate({ imageBytes: original, mimeType: "image/jpeg" });
+          if (!bytes) break; // returned no image — treat as permanent, try next article
+        } catch (err) {
+          lastErr = err;
+          if (!isTransient(err)) break; // content refusal / permanent — try next article
+        }
+      }
+      if (bytes) {
+        // On success keep BOTH the sketch and the source photo (audit trail).
+        made.set(a, { sketch: bytes, original });
+        success = true;
+        break;
+      }
+      const reason = lastErr !== undefined ? errMsg(lastErr) : "model returned no image";
       warn(
-        `illustrate: could not illustrate "${a.garlicTitle}" after ${retries + 1} attempt(s) (${reason}); slot will be text-only.`,
+        `illustrate: could not illustrate "${a.garlicTitle}" (${reason}); trying the next ${source} article.`,
       );
     }
-    // On success keep BOTH the sketch and the source photo (audit trail).
-    result.push(bytes ? { ...a, illustration: bytes, originalImage: original ?? undefined } : a);
+    if (!success) {
+      warn(
+        `illustrate: no ${source} photo could be illustrated; that image slot will be text-only.`,
+      );
+    }
   }
-  return result;
+
+  return articles.map((a) => {
+    const m = made.get(a);
+    return m ? { ...a, illustration: m.sketch, originalImage: m.original } : a;
+  });
 }
