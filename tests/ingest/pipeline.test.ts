@@ -66,4 +66,14 @@ test("runIngest writes >=3 articles per source", async () => {
   expect(res.selection).toHaveLength(6);
   expect(res.selection.every((s) => s.picked)).toBe(true); // this fixture picks all 6
   expect(res.selection.filter((s) => s.source === "cnn")).toHaveLength(3);
+  // per-stage timings are reported for the build log
+  expect(res.timings.map((t) => t.name)).toEqual([
+    "fetch",
+    "classify",
+    "garlic-title",
+    "select",
+    "body-swap",
+    "illustrate",
+    "write",
+  ]);
 });

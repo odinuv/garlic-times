@@ -8,7 +8,7 @@ import { selectBest } from "@/ingest/select";
 import { swapBody } from "@/ingest/bodySwap";
 import { writeSourceFiles } from "@/ingest/writeSources";
 import type { GeminiComplete } from "@/ingest/gemini";
-import type { SelectionEntry } from "@/ingest/usage";
+import type { SelectionEntry, Timing } from "@/ingest/usage";
 import { illustrateSelected, type ImageGenerator, type FetchBytes } from "@/ingest/illustrate";
 
 const SOURCES: Source[] = ["cnn", "fox"];
@@ -21,21 +21,34 @@ export async function runIngest(opts: {
   fetchImageBytes?: FetchBytes;
   perSource?: number;
   minPerSource?: number;
-}): Promise<{ written: number; selection: SelectionEntry[] }> {
+}): Promise<{ written: number; selection: SelectionEntry[]; timings: Timing[] }> {
   const { contentDir, complete } = opts;
   const perSource = opts.perSource ?? 4;
   const minPerSource = opts.minPerSource ?? 3;
 
+  const timings: Timing[] = [];
+  const timed = async <T>(name: string, fn: () => Promise<T>): Promise<T> => {
+    const start = performance.now();
+    const result = await fn();
+    timings.push({ name, ms: performance.now() - start });
+    return result;
+  };
+
   const candidates = (
-    await Promise.all(SOURCES.map((s) => fetchCandidates(s, { fetchText: opts.fetchText })))
+    await timed("fetch", () =>
+      Promise.all(SOURCES.map((s) => fetchCandidates(s, { fetchText: opts.fetchText }))),
+    )
   ).flat();
 
-  const eligible = await classifyCandidates(candidates, complete);
-  const titled = await garlicTitleCandidates(eligible, complete);
-  const selected = await selectBest(titled, complete, perSource);
+  const eligible = await timed("classify", () => classifyCandidates(candidates, complete));
+  const titled = await timed("garlic-title", () => garlicTitleCandidates(eligible, complete));
+  const selected = await timed("select", () => selectBest(titled, complete, perSource));
 
-  const articles: GarlicArticle[] = [];
-  for (const c of selected) articles.push(await swapBody(c, complete));
+  const articles = await timed("body-swap", async () => {
+    const out: GarlicArticle[] = [];
+    for (const c of selected) out.push(await swapBody(c, complete));
+    return out;
+  });
 
   for (const source of SOURCES) {
     const n = articles.filter((a) => a.source === source).length;
@@ -53,11 +66,13 @@ export async function runIngest(opts: {
     picked: pickedUrls.has(t.url),
   }));
 
-  const illustrated = await illustrateSelected(articles, {
-    generate: opts.generateImage,
-    fetchBytes: opts.fetchImageBytes,
-  });
+  const illustrated = await timed("illustrate", () =>
+    illustrateSelected(articles, {
+      generate: opts.generateImage,
+      fetchBytes: opts.fetchImageBytes,
+    }),
+  );
 
-  writeSourceFiles({ articles: illustrated, contentDir });
-  return { written: illustrated.length, selection };
+  await timed("write", async () => writeSourceFiles({ articles: illustrated, contentDir }));
+  return { written: illustrated.length, selection, timings };
 }

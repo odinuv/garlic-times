@@ -14,32 +14,31 @@ async function main(): Promise<void> {
   const complete = createGeminiComplete(undefined, tracker);
   const generateImage = createImageGenerator(undefined, tracker);
 
-  const t0 = performance.now();
-  const { written, selection } = await runIngest({
+  const { written, selection, timings } = await runIngest({
     contentDir: "content",
     complete,
     generateImage,
   });
   console.log(`Ingested ${written} articles into content/sources/`);
 
-  const t1 = performance.now();
+  const tAuthorStart = performance.now();
   const date = todayIso();
   const path = authorEdition({ date, contentDir: "content" });
   console.log(`Authored ${path}`);
 
-  const t2 = performance.now();
+  const tGenStart = performance.now();
   await generateSite({ contentDir: "content", outDir: "dist" });
   console.log("Generated dist/");
-  const t3 = performance.now();
+  const tEnd = performance.now();
 
   console.log("\n" + formatUsageTable(tracker));
   console.log("\n" + formatSelection(selection));
   console.log(
     "\n" +
       formatTiming([
-        { name: "ingest", ms: t1 - t0 },
-        { name: "author", ms: t2 - t1 },
-        { name: "generate", ms: t3 - t2 },
+        ...timings, // ingest sub-stages (fetch, classify, …, illustrate, write)
+        { name: "author", ms: tGenStart - tAuthorStart },
+        { name: "generate", ms: tEnd - tGenStart },
       ]),
   );
 }
