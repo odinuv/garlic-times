@@ -22,6 +22,14 @@ export function formatDisplayDate(date: string): string {
   return `${WEEKDAYS[dt.getUTCDay()]} ${MONTHS[m - 1]} ${d}, ${y}`;
 }
 
+// A plausible, ever-rising edition number: ~1.3 per day since 1920-01-01
+// (≈ 50,000 in 2026). Deterministic from the date, so builds stay reproducible.
+export function editionNumber(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const days = Math.floor((Date.UTC(y, m - 1, d) - Date.UTC(1920, 0, 1)) / 86_400_000);
+  return `No. ${Math.round(days * 1.3).toLocaleString("en-US")}`;
+}
+
 export function staticFields(
   date: string,
 ): Pick<
@@ -31,8 +39,8 @@ export function staticFields(
   const displayDate = formatDisplayDate(date);
   return {
     displayDate,
-    editionNo: "No. 58,419", // TODO: derive from date (placeholder for skeleton)
-    strapline: `London · ${displayDate} · Twelve Cloves`,
+    editionNo: editionNumber(date),
+    strapline: `EU · ${displayDate} · Twelve Cloves`,
     price: "Price 6d.",
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
     rates: {
