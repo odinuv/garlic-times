@@ -15,7 +15,7 @@ export const IMAGE_MODEL = process.env.GEMINI_MODEL_IMAGE ?? "gemini-3.1-flash-i
 export const ILLUSTRATE_PROMPT = `Redraw this photograph as a 1960s newspaper COURTROOM SKETCH:
 - loose hand-drawn pen-and-ink linework with cross-hatching for shading;
 - STRICTLY BLACK AND WHITE — no colour at all, monochrome only;
-- plain warm off-white background of colour #F3F2EE (matching newsprint), no border;
+- a plain PURE WHITE (#FFFFFF) background — no border, no shadow, no vignette, no grey fill;
 - keep the main subject clearly recognisable.
 Output only the illustration.`;
 
