@@ -71,35 +71,45 @@ export function ArticleBlock({
       {/* Body text flows freely (no break-inside-avoid), so the article can
           continue across the page columns and fill them evenly. */}
       <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 ${colsClass}`}>
-        {article.body.map((p, i) => (
-          <p key={i}>
-            {renderInline(p)}
-            {article.sourceUrl && i === article.body.length - 1 && (
-              <>
-                {" "}
+        {article.body.map((p, i) => {
+          const isLast = i === article.body.length - 1;
+          return (
+            <p key={i}>
+              {renderInline(p)}
+              {article.sourceUrl && isLast && (
+                <>
+                  {" "}
+                  <a
+                    href={article.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold no-underline"
+                    aria-label="Read the original article"
+                  >
+                    {">>"}
+                  </a>
+                </>
+              )}
+              {/* "Like" glyph floated to the right of the last line and nudged into
+                  the column gutter, so it keeps to one line and never overlaps text
+                  that runs to the edge. */}
+              {isLast && (
                 <a
-                  href={article.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold no-underline"
-                  aria-label="Read the original article"
+                  href={`/${date}/${number}/`}
+                  aria-label="Like this article"
+                  className="float-right ml-2 -mr-1 no-underline"
                 >
-                  {">>"}
+                  <img
+                    src="/static/thumbs-up.png"
+                    alt="Thumbs up"
+                    loading="lazy"
+                    className="inline-block h-5 w-auto align-text-bottom mix-blend-multiply"
+                  />
                 </a>
-              </>
-            )}
-          </p>
-        ))}
-      </div>
-      <div className="mt-1 text-right break-inside-avoid">
-        <a href={`/${date}/${number}/`} aria-label="Like this article" className="no-underline">
-          <img
-            src="/static/thumbs-up.png"
-            alt="Thumbs up"
-            loading="lazy"
-            className="inline-block h-8 w-auto mix-blend-multiply"
-          />
-        </a>
+              )}
+            </p>
+          );
+        })}
       </div>
     </article>
   );
