@@ -27,7 +27,7 @@ export function buildEdition(opts: {
   const articles = stories.map((story, i) => transformStory(story, slots[i]));
 
   const recipes = loadRecipes(join(contentDir, "recipes"));
-  const recipe = pickRecipe(recipes, rng);
+  const recipe = pickRecipe(recipes, date);
 
   const edition = { date, ...staticFields(date), articles, recipe };
   return parseEdition(edition, `${date}.json`);
