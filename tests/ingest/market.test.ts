@@ -48,6 +48,8 @@ test("fetchMarket carries forward the last snapshot when the fetch fails", async
   const snap = await fetchMarket({ contentDir: dir, date: "2026-07-06", fetchJson });
   expect(snap.source).toBe("carry-forward");
   expect(snap.series.corn).toEqual({ price: 1, prevClose: 1 });
+  // carry-forward must NOT rewrite the on-disk snapshot
+  expect(JSON.parse(readFileSync(join(dir, "market.json"), "utf8")).source).toBe("yahoo");
 });
 
 test("fetchMarket synthesizes deterministically when there is no prior file", async () => {
