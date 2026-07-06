@@ -65,12 +65,12 @@ export function EditionPage({
       {/* Articles flow across these page columns so the columns fill evenly;
           only whole-unit blocks (boxes, photos, headlines) resist splitting. */}
       <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:mb-6">
-        {lead && <ArticleBlock article={lead} />}
+        {lead && <ArticleBlock article={lead} number={1} date={edition.date} />}
         <RatesBox rates={edition.rates} />
-        {second && <ArticleBlock article={second} />}
+        {second && <ArticleBlock article={second} number={2} date={edition.date} />}
         <AdvertBox advert={edition.advert} />
         {rest.map((a, i) => (
-          <ArticleBlock key={i} article={a} />
+          <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
         <RecipeBox recipe={edition.recipe} />
       </section>

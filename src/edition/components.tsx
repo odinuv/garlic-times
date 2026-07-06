@@ -29,11 +29,19 @@ export function Headline({
   );
 }
 
-export function ArticleBlock({ article }: { article: Article }) {
+export function ArticleBlock({
+  article,
+  number,
+  date,
+}: {
+  article: Article;
+  number: number;
+  date: string;
+}) {
   const colsClass =
     article.columns === 2 ? "sm:columns-2 sm:gap-5 [column-rule:1px_solid_var(--ink)]" : "";
   return (
-    <article className="mb-2">
+    <article id={`article-${number}`} className="mb-2">
       {/* Keep the headline whole and glued to the text that follows it. */}
       <Headline size={article.size} className="mb-1 break-inside-avoid break-after-avoid">
         {article.title}
@@ -82,6 +90,16 @@ export function ArticleBlock({ article }: { article: Article }) {
             )}
           </p>
         ))}
+      </div>
+      <div className="mt-1 text-right break-inside-avoid">
+        <a href={`/${date}/${number}/`} aria-label="Like this article" className="no-underline">
+          <img
+            src="/static/thumbs-up.png"
+            alt="Thumbs up"
+            loading="lazy"
+            className="inline-block h-8 w-auto mix-blend-multiply"
+          />
+        </a>
       </div>
     </article>
   );
