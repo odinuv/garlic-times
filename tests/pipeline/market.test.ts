@@ -1,5 +1,8 @@
 import { test, expect } from "bun:test";
-import { computeRates, gpi, type MarketSnapshot } from "@/pipeline/market";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { computeRates, gpi, loadMarket, type MarketSnapshot } from "@/pipeline/market";
 
 const snap: MarketSnapshot = {
   fetchedAt: "x",
@@ -31,4 +34,10 @@ test("computeRates builds the garlic lead and top-2 movers", () => {
     { label: "Corn, Chicago", value: "495.0", delta: "+10.0%" },
     { label: "Crude Oil", value: "75.00", delta: "+0.0%" },
   ]);
+});
+
+test("loadMarket throws a readable error on a malformed snapshot", () => {
+  const dir = mkdtempSync(join(tmpdir(), "gt-load-"));
+  writeFileSync(join(dir, "market.json"), JSON.stringify({ source: "yahoo" }));
+  expect(() => loadMarket(dir)).toThrow(/invalid/);
 });

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { z } from "zod";
 import type { Edition } from "@/edition/schema";
 
 export type Series = { price: number; prevClose: number };
@@ -72,11 +73,30 @@ export function computeRates(m: MarketSnapshot): Edition["rates"] {
   };
 }
 
+const seriesSchema = z.object({ price: z.number(), prevClose: z.number() });
+const marketSnapshotSchema = z.object({
+  fetchedAt: z.string(),
+  source: z.enum(["yahoo", "carry-forward", "synthetic"]),
+  series: z.object({
+    corn: seriesSchema,
+    crude: seriesSchema,
+    copper: seriesSchema,
+    cny: seriesSchema,
+    eurusd: seriesSchema,
+  }),
+});
+
 export function loadMarket(contentDir: string): MarketSnapshot {
   const p = join(contentDir, "market.json");
+  let raw: unknown;
   try {
-    return JSON.parse(readFileSync(p, "utf8")) as MarketSnapshot;
+    raw = JSON.parse(readFileSync(p, "utf8"));
   } catch (e) {
     throw new Error(`loadMarket: cannot read ${p}: ${e}`);
   }
+  const parsed = marketSnapshotSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(`loadMarket: invalid ${p}: ${parsed.error.message}`);
+  }
+  return parsed.data;
 }
