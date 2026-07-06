@@ -73,5 +73,10 @@ export function computeRates(m: MarketSnapshot): Edition["rates"] {
 }
 
 export function loadMarket(contentDir: string): MarketSnapshot {
-  return JSON.parse(readFileSync(join(contentDir, "market.json"), "utf8")) as MarketSnapshot;
+  const p = join(contentDir, "market.json");
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as MarketSnapshot;
+  } catch (e) {
+    throw new Error(`loadMarket: cannot read ${p}: ${e}`);
+  }
 }
