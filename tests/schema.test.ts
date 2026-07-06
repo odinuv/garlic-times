@@ -20,7 +20,7 @@ test("rejects a malformed date", () => {
 test("rates.lead is required and carries usd/eur/delta", () => {
   expect(() => parseEdition(validEdition, "valid.json")).not.toThrow();
 
-  const noLead = structuredClone(validEdition) as any;
-  delete noLead.rates.lead;
+  const noLead = structuredClone(validEdition);
+  delete (noLead.rates as { lead?: unknown }).lead;
   expect(() => parseEdition(noLead, "bad.json")).toThrow(/lead/);
 });

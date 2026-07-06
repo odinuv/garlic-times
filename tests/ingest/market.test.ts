@@ -15,8 +15,14 @@ test("parseChart extracts price and previous close", () => {
 
 test("fetchMarket writes a live snapshot when Yahoo responds", async () => {
   const dir = mkdtempSync(join(tmpdir(), "gt-mkt-"));
-  const fetchJson: FetchJson = async (url) => (url.includes("ZC=F") ? chart(455, 450) : chart(10, 10));
-  const snap = await fetchMarket({ contentDir: dir, date: "2026-07-06", fetchJson, now: () => "T" });
+  const fetchJson: FetchJson = async (url) =>
+    url.includes("ZC=F") ? chart(455, 450) : chart(10, 10);
+  const snap = await fetchMarket({
+    contentDir: dir,
+    date: "2026-07-06",
+    fetchJson,
+    now: () => "T",
+  });
   expect(snap.source).toBe("yahoo");
   expect(snap.series.corn).toEqual({ price: 455, prevClose: 450 });
   expect(existsSync(join(dir, "market.json"))).toBe(true);

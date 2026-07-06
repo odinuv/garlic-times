@@ -1,7 +1,13 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { mulberry32, seedFromDate } from "@/pipeline/rng";
-import { BASELINE, loadMarket, type BasketKey, type MarketSnapshot, type Series } from "@/pipeline/market";
+import {
+  BASELINE,
+  loadMarket,
+  type BasketKey,
+  type MarketSnapshot,
+  type Series,
+} from "@/pipeline/market";
 
 export const YAHOO_TICKERS: Record<BasketKey | "eurusd", string> = {
   corn: "ZC=F",
@@ -46,8 +52,7 @@ async function shortRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 300):
   throw lastErr;
 }
 
-const url = (ticker: string) =>
-  `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
+const url = (ticker: string) => `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`;
 
 function synthesize(date: string): MarketSnapshot["series"] {
   const rng = mulberry32(seedFromDate(date));

@@ -41,8 +41,12 @@ function deltaOf(s: Series): number {
 }
 
 export function computeRates(m: MarketSnapshot): Edition["rates"] {
-  const at = (pick: (s: Series) => number) =>
-    ({ corn: pick(m.series.corn), crude: pick(m.series.crude), copper: pick(m.series.copper), cny: pick(m.series.cny) });
+  const at = (pick: (s: Series) => number) => ({
+    corn: pick(m.series.corn),
+    crude: pick(m.series.crude),
+    copper: pick(m.series.copper),
+    cny: pick(m.series.cny),
+  });
 
   const gpiToday = gpi(at((s) => s.price));
   const gpiPrev = gpi(at((s) => s.prevClose));
