@@ -25,17 +25,23 @@ export function EditionPage({
           <span>{edition.price}</span>
         </div>
         <Rule />
-        <h1 className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 font-serif font-bold leading-none">
-          <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.the}</span>
-          <span className="text-2xl sm:text-5xl md:text-7xl italic">{masthead.middle}</span>
-          <img
-            src={masthead.glyph}
-            alt="The Garlic Times emblem"
-            width={120}
-            height={120}
-            className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
-          />
-          <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.end}</span>
+        <h1 className="font-serif font-bold leading-none">
+          <a
+            href="/"
+            aria-label="The Garlic Times — front page"
+            className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 no-underline"
+          >
+            <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.the}</span>
+            <span className="text-2xl sm:text-5xl md:text-7xl italic">{masthead.middle}</span>
+            <img
+              src={masthead.glyph}
+              alt="The Garlic Times emblem"
+              width={120}
+              height={120}
+              className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
+            />
+            <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.end}</span>
+          </a>
         </h1>
         <Rule />
         <p className="flex items-center justify-center gap-3 text-center text-[10px] uppercase tracking-[0.25em] sm:text-[12px] sm:tracking-[0.3em]">
