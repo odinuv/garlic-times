@@ -20,6 +20,10 @@ const ARTICLE = (t: string) => `<!doctype html><html><head><title>${t}</title>
   <p>${t} body paragraph two with more sentences so the parser is content with the article.</p>
   </article></body></html>`;
 
+const fetchJson = async () => ({
+  chart: { result: [{ meta: { regularMarketPrice: 100, chartPreviousClose: 99 } }] },
+});
+
 const fetchText = async (url: string) => {
   if (url.includes("sitemap")) return SITEMAP; // cnn
   if (url.includes("xml")) return FEED("fox"); // fox moxie feeds
@@ -57,6 +61,8 @@ test("runIngest writes >=3 articles per source", async () => {
     fetchText,
     generateImage: async () => new Uint8Array([9]),
     fetchImageBytes: async () => new Uint8Array([1]),
+    date: "2026-07-06",
+    fetchJson,
     perSource: 3,
     minPerSource: 3,
   });
@@ -68,6 +74,7 @@ test("runIngest writes >=3 articles per source", async () => {
   expect(res.selection.filter((s) => s.source === "cnn")).toHaveLength(3);
   // per-stage timings are reported for the build log
   expect(res.timings.map((t) => t.name)).toEqual([
+    "market",
     "fetch",
     "classify",
     "garlic-title",

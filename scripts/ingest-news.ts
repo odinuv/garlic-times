@@ -4,12 +4,14 @@
 import { runIngest } from "@/ingest/pipeline";
 import { createGeminiComplete } from "@/ingest/gemini";
 import { createImageGenerator } from "@/ingest/illustrate";
+import { todayIso } from "./author-edition";
 
 if (import.meta.main) {
   runIngest({
     contentDir: "content",
     complete: createGeminiComplete(),
     generateImage: createImageGenerator(),
+    date: todayIso(),
   })
     .then(({ written }) => console.log(`Ingested ${written} articles into content/sources/`))
     .catch((err) => {

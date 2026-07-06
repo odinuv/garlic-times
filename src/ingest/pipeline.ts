@@ -10,6 +10,7 @@ import { writeSourceFiles } from "@/ingest/writeSources";
 import type { GeminiComplete } from "@/ingest/gemini";
 import type { SelectionEntry, Timing } from "@/ingest/usage";
 import { illustrateSelected, type ImageGenerator, type FetchBytes } from "@/ingest/illustrate";
+import { fetchMarket, type FetchJson } from "@/ingest/market";
 
 const SOURCES: Source[] = ["cnn", "fox"];
 
@@ -21,6 +22,8 @@ export async function runIngest(opts: {
   fetchImageBytes?: FetchBytes;
   perSource?: number;
   minPerSource?: number;
+  date?: string;
+  fetchJson?: FetchJson;
 }): Promise<{ written: number; selection: SelectionEntry[]; timings: Timing[] }> {
   const { contentDir, complete } = opts;
   const perSource = opts.perSource ?? 4;
@@ -33,6 +36,9 @@ export async function runIngest(opts: {
     timings.push({ name, ms: performance.now() - start });
     return result;
   };
+
+  const date = opts.date ?? new Date().toISOString().slice(0, 10);
+  await timed("market", () => fetchMarket({ contentDir, date, fetchJson: opts.fetchJson }));
 
   const candidates = (
     await timed("fetch", () =>
