@@ -41,7 +41,7 @@ export function staticFields(
     displayDate,
     editionNo: editionNumber(date),
     strapline: `EU · ${displayDate} · Twelve Cloves`,
-    price: "Price 6d.",
+    price: "Price 6G.",
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
     rates: {
       title: "Foreign Exchanges — £1 buys",
