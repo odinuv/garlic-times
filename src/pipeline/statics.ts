@@ -45,6 +45,7 @@ export function staticFields(
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
     rates: {
       title: "Foreign Exchanges — £1 buys",
+      lead: { label: "Garlic, per kg", usd: "$3.00", eur: "€2.78", delta: "+0.1%" },
       rows: [
         { label: "U.S. Dollar", value: "2.8012", delta: "+0.0004" },
         { label: "Swiss Franc", value: "12.10", delta: "−0.01" },

@@ -16,3 +16,11 @@ test("rejects a malformed date", () => {
   const bad = { ...validEdition, date: "3 October 1962" };
   expect(() => parseEdition(bad, "bad.json")).toThrow(/date/);
 });
+
+test("rates.lead is required and carries usd/eur/delta", () => {
+  expect(() => parseEdition(validEdition, "valid.json")).not.toThrow();
+
+  const noLead = structuredClone(validEdition) as any;
+  delete noLead.rates.lead;
+  expect(() => parseEdition(noLead, "bad.json")).toThrow(/lead/);
+});

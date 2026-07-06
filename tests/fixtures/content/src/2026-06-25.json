@@ -12,8 +12,9 @@
   },
   "articles": [{ "title": "Oldest day", "body": ["Body."] }],
   "rates": {
-    "title": "Foreign Exchanges — £1 buys",
-    "rows": [{ "label": "U.S. Dollar", "value": "2.80", "delta": "+0.00" }]
+    "title": "The Garlic Market",
+    "lead": { "label": "Garlic, per kg", "usd": "$3.00", "eur": "€2.78", "delta": "+0.1%" },
+    "rows": [{ "label": "Crude Oil", "value": "74.00", "delta": "−1.3%" }]
   },
   "recipe": {
     "kicker": "From the Kitchen",

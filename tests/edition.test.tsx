@@ -10,7 +10,7 @@ test("renders headline, byline, rates, recipe", () => {
   expect(html).toContain("Cabinet talks resume");
   expect(html).toContain("From our Political Correspondent");
   expect(html).toContain("Steak &amp; Kidney Pudding");
-  expect(html).toContain("U.S. Dollar");
+  expect(html).toContain("Crude Oil");
 });
 
 test("about link is in the footer", () => {
