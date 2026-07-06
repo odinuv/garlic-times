@@ -56,3 +56,13 @@ test("fetchMarket synthesizes deterministically when there is no prior file", as
   expect(a.series).toEqual(b.series); // deterministic from the date seed
   expect(JSON.parse(readFileSync(join(dirA, "market.json"), "utf8")).source).toBe("synthetic");
 });
+
+test("fetchMarket synthesizes when the existing snapshot is corrupt", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "gt-mkt-"));
+  writeFileSync(join(dir, "market.json"), JSON.stringify({ source: "yahoo" })); // wrong shape
+  const fetchJson: FetchJson = async () => {
+    throw new Error("down");
+  };
+  const snap = await fetchMarket({ contentDir: dir, date: "2026-07-06", fetchJson });
+  expect(snap.source).toBe("synthetic");
+});

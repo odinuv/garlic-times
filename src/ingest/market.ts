@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { mulberry32, seedFromDate } from "@/pipeline/rng";
-import { BASELINE, type BasketKey, type MarketSnapshot, type Series } from "@/pipeline/market";
+import { BASELINE, loadMarket, type BasketKey, type MarketSnapshot, type Series } from "@/pipeline/market";
 
 export const YAHOO_TICKERS: Record<BasketKey | "eurusd", string> = {
   corn: "ZC=F",
@@ -83,12 +83,25 @@ export async function fetchMarket(opts: {
     const snap: MarketSnapshot = { fetchedAt: now(), source: "yahoo", series };
     writeFileSync(path, JSON.stringify(snap, null, 2) + "\n");
     return snap;
-  } catch {
+  } catch (err) {
+    // Live fetch failed. Prefer a coherent prior snapshot over a half-populated
+    // live one; validate it (a corrupt/stale file falls through to synthesize).
     if (existsSync(path)) {
-      const prev = JSON.parse(readFileSync(path, "utf8")) as MarketSnapshot;
-      return { ...prev, source: "carry-forward" };
+      try {
+        const prev = loadMarket(opts.contentDir);
+        console.warn(`fetchMarket: live fetch failed (${err}); carrying forward ${path}`);
+        return { ...prev, source: "carry-forward" };
+      } catch (readErr) {
+        console.warn(`fetchMarket: existing ${path} is unreadable (${readErr}); synthesizing`);
+      }
+    } else {
+      console.warn(`fetchMarket: live fetch failed (${err}) and no prior snapshot; synthesizing`);
     }
-    const snap: MarketSnapshot = { fetchedAt: now(), source: "synthetic", series: synthesize(opts.date) };
+    const snap: MarketSnapshot = {
+      fetchedAt: now(),
+      source: "synthetic",
+      series: synthesize(opts.date),
+    };
     writeFileSync(path, JSON.stringify(snap, null, 2) + "\n");
     return snap;
   }
