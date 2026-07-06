@@ -120,6 +120,14 @@ export function RatesBox({ rates }: { rates: Edition["rates"] }) {
     <article className="border border-ink p-3 break-inside-avoid">
       <p className="mb-1 text-center text-[10px] uppercase tracking-[0.25em]">{rates.title}</p>
       <Rule />
+      <div className="my-2 text-center">
+        <p className="text-[11px] uppercase tracking-[0.2em]">{rates.lead.label}</p>
+        <p className="text-[15px] font-semibold tabular-nums">
+          {rates.lead.usd} <span className="text-muted-foreground">/</span> {rates.lead.eur}{" "}
+          <span className="text-[12px] text-muted-foreground">{rates.lead.delta}</span>
+        </p>
+      </div>
+      <Rule />
       <table className="w-full text-[13px]">
         <tbody>
           {rates.rows.map((row, i) => (
