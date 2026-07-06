@@ -30,6 +30,16 @@ function writeHtml(outDir: string, segments: string[], html: string) {
   writeFileSync(join(dir, "index.html"), html);
 }
 
+export function renderRedirect(date: string, n: number): string {
+  const url = `/${date}/#article-${n}`;
+  return (
+    `<!DOCTYPE html><meta charset="utf-8">` +
+    `<meta http-equiv="refresh" content="0;url=${url}">` +
+    `<script>location.replace(${JSON.stringify(url)})</script>` +
+    `<a href="${url}">Continue</a>`
+  );
+}
+
 export async function writePages(opts: {
   editions: Edition[];
   aboutHtml: string;
@@ -47,6 +57,10 @@ export async function writePages(opts: {
       body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
     });
     writeHtml(outDir, [edition.date], html);
+    edition.articles.forEach((_, idx) => {
+      const n = idx + 1;
+      writeHtml(outDir, [edition.date, String(n)], renderRedirect(edition.date, n));
+    });
     if (i === editions.length - 1) {
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, "index.html"), html); // root = newest

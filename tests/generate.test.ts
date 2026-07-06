@@ -3,7 +3,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadEditions, neighbours, writePages } from "../scripts/generate";
+import { loadEditions, neighbours, writePages, renderRedirect } from "../scripts/generate";
 
 const FIX = join(import.meta.dir, "fixtures", "content");
 
@@ -44,4 +44,28 @@ test("writePages emits per-date pages, root index, and about", async () => {
   const about = readFileSync(join(out, "about", "index.html"), "utf8");
   expect(about).toContain("About");
   expect(about).toContain('href="/styles.css"');
+});
+
+test("renderRedirect targets the article anchor with meta + JS", () => {
+  const html = renderRedirect("2026-06-27", 3);
+  expect(html).toContain('content="0;url=/2026-06-27/#article-3"');
+  expect(html).toContain('location.replace("/2026-06-27/#article-3")');
+});
+
+test("writePages emits one redirect page per article", async () => {
+  const eds = loadEditions(join(FIX, "src"));
+  const out = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out });
+
+  const ed = eds.find((e) => e.date === "2026-06-27")!;
+  for (let n = 1; n <= ed.articles.length; n++) {
+    expect(existsSync(join(out, "2026-06-27", String(n), "index.html"))).toBe(true);
+  }
+  // no stray page beyond the article count
+  expect(existsSync(join(out, "2026-06-27", String(ed.articles.length + 1), "index.html"))).toBe(
+    false,
+  );
+
+  const first = readFileSync(join(out, "2026-06-27", "1", "index.html"), "utf8");
+  expect(first).toContain('location.replace("/2026-06-27/#article-1")');
 });
