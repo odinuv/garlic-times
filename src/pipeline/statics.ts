@@ -1,4 +1,5 @@
 import type { Edition } from "@/edition/schema";
+import { computeRates, type MarketSnapshot } from "@/pipeline/market";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = [
@@ -32,6 +33,7 @@ export function editionNumber(date: string): string {
 
 export function staticFields(
   date: string,
+  market: MarketSnapshot,
 ): Pick<
   Edition,
   "displayDate" | "editionNo" | "strapline" | "price" | "masthead" | "rates" | "advert" | "meta"
@@ -43,14 +45,7 @@ export function staticFields(
     strapline: `EU · ${displayDate} · Twelve Cloves`,
     price: "Price 6G.",
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
-    rates: {
-      title: "Foreign Exchanges — £1 buys",
-      lead: { label: "Garlic, per kg", usd: "$3.00", eur: "€2.78", delta: "+0.1%" },
-      rows: [
-        { label: "U.S. Dollar", value: "2.8012", delta: "+0.0004" },
-        { label: "Swiss Franc", value: "12.10", delta: "−0.01" },
-      ],
-    },
+    rates: computeRates(market),
     advert: {
       src: "/img/advert.jpg",
       alt: "An advertisement for a fine wristwatch",

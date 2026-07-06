@@ -6,6 +6,7 @@ import { loadSourceStories } from "@/pipeline/sources";
 import { loadRecipes, pickRecipe } from "@/pipeline/recipes";
 import { transformStory } from "@/pipeline/transform";
 import { staticFields } from "@/pipeline/statics";
+import { loadMarket } from "@/pipeline/market";
 import { mulberry32, seedFromDate } from "@/pipeline/rng";
 
 export function buildEdition(opts: {
@@ -29,6 +30,7 @@ export function buildEdition(opts: {
   const recipes = loadRecipes(join(contentDir, "recipes"));
   const recipe = pickRecipe(recipes, date);
 
-  const edition = { date, ...staticFields(date), articles, recipe };
+  const market = loadMarket(contentDir);
+  const edition = { date, ...staticFields(date, market), articles, recipe };
   return parseEdition(edition, `${date}.json`);
 }

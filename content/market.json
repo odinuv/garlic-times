@@ -1,0 +1,11 @@
+{
+  "fetchedAt": "2026-07-06T00:00:00Z",
+  "source": "synthetic",
+  "series": {
+    "corn": { "price": 450.0, "prevClose": 450.0 },
+    "crude": { "price": 75.0, "prevClose": 75.0 },
+    "copper": { "price": 4.2, "prevClose": 4.2 },
+    "cny": { "price": 7.2, "prevClose": 7.2 },
+    "eurusd": { "price": 1.08, "prevClose": 1.08 }
+  }
+}
