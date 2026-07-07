@@ -1,6 +1,7 @@
 import React from "react";
 import type { Edition } from "@/edition/schema";
-import { ArticleBlock, AdvertBox, RatesBox, RecipeBox, Rule } from "@/edition/components";
+// AdvertBox import removed while the advertisement section is commented out below (re-add to restore).
+import { ArticleBlock, RatesBox, RecipeBox, Rule } from "@/edition/components";
 
 export function EditionPage({
   edition,
@@ -74,7 +75,8 @@ export function EditionPage({
         {lead && <ArticleBlock article={lead} number={1} date={edition.date} />}
         <RatesBox rates={edition.rates} />
         {second && <ArticleBlock article={second} number={2} date={edition.date} />}
-        <AdvertBox advert={edition.advert} />
+        {/* Advertisement section temporarily hidden (data retained in the edition schema). */}
+        {/* <AdvertBox advert={edition.advert} /> */}
         {rest.map((a, i) => (
           <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
