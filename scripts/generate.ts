@@ -81,6 +81,11 @@ export function copyAssets(contentDir: string, outDir: string): void {
     const from = join(contentDir, sub);
     if (existsSync(from)) cpSync(from, join(outDir, sub), { recursive: true });
   }
+  // Root-level files served from the site root (e.g. /robots.txt), not under /static/.
+  for (const file of ["robots.txt"]) {
+    const from = join(contentDir, file);
+    if (existsSync(from)) cpSync(from, join(outDir, file));
+  }
 }
 
 export async function compileCss(inputCss: string, outCss: string): Promise<void> {

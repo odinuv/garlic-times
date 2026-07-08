@@ -1,0 +1,4 @@
+# "Like" links are redirect stubs at /<date>/<number>/ — skip them.
+# Real edition pages live at /<date>/ and stay crawlable.
+User-agent: *
+Disallow: /*/*/

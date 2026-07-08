@@ -19,6 +19,17 @@ test("copyAssets mirrors img and static into the output", () => {
   expect(existsSync(join(out, "static", "coat.png"))).toBe(true);
 });
 
+test("copyAssets places robots.txt at the output root", () => {
+  const content = mkdtempSync(join(tmpdir(), "gt-content-"));
+  const out = mkdtempSync(join(tmpdir(), "gt-out-"));
+  writeFileSync(join(content, "robots.txt"), "User-agent: *\nDisallow: /*/*/\n");
+
+  copyAssets(content, out);
+
+  expect(existsSync(join(out, "robots.txt"))).toBe(true);
+  expect(existsSync(join(out, "static", "robots.txt"))).toBe(false);
+});
+
 test("copyAssets tolerates a missing source directory", () => {
   const content = mkdtempSync(join(tmpdir(), "gt-content-"));
   const out = mkdtempSync(join(tmpdir(), "gt-out-"));
