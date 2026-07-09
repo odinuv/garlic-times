@@ -14,15 +14,17 @@ async function main(): Promise<void> {
   const complete = createGeminiComplete(undefined, tracker);
   const generateImage = createImageGenerator(undefined, tracker);
 
+  const date = todayIso();
+
   const { written, selection, timings } = await runIngest({
     contentDir: "content",
     complete,
     generateImage,
+    date,
   });
   console.log(`Ingested ${written} articles into content/sources/`);
 
   const tAuthorStart = performance.now();
-  const date = todayIso();
   const path = authorEdition({ date, contentDir: "content" });
   console.log(`Authored ${path}`);
 

@@ -25,9 +25,10 @@ const article = (n: number, illustrated: boolean): GarlicArticle => ({
     : {}),
 });
 
-test("writeSourceFiles writes NN-slug.json and the illustration image when present", () => {
+test("writeSourceFiles writes NN-slug.json and the date-namespaced image when present", () => {
   const contentDir = mkdtempSync(join(tmpdir(), "gt-src-"));
-  writeSourceFiles({ articles: [article(1, true), article(2, false)], contentDir });
+  const date = "2026-07-01";
+  writeSourceFiles({ articles: [article(1, true), article(2, false)], contentDir, date });
 
   const cnnDir = join(contentDir, "sources", "cnn");
   const files = readdirSync(cnnDir).sort();
@@ -36,15 +37,12 @@ test("writeSourceFiles writes NN-slug.json and the illustration image when prese
   const first = JSON.parse(readFileSync(join(cnnDir, files[0]), "utf8"));
   expect(first.headline).toBe("Garlic story 1");
   expect(first.body).toEqual(["Para one.", "Para two."]);
-  expect(first.image.src).toBe("/img/cnn-01-garlic-story-1.jpg");
+  expect(first.image.src).toBe("/img/2026-07-01/cnn-01-garlic-story-1.jpg");
   expect(first.sourceUrl).toBe("https://cnn/1");
-  expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1.jpg"))).toBe(true);
-  // the source photo is kept alongside the sketch as an audit trail
-  expect(existsSync(join(contentDir, "img", "cnn-01-garlic-story-1-source.jpg"))).toBe(true);
+  expect(existsSync(join(contentDir, "img", date, "cnn-01-garlic-story-1.jpg"))).toBe(true);
+  expect(existsSync(join(contentDir, "img", date, "cnn-01-garlic-story-1-source.jpg"))).toBe(true);
 
   const second = JSON.parse(readFileSync(join(cnnDir, files[1]), "utf8"));
   expect(second.image).toBeUndefined();
-  expect(
-    existsSync(join(contentDir, "img", "cnn-02-garlic-story-2.json".replace(".json", ".jpg"))),
-  ).toBe(false);
+  expect(existsSync(join(contentDir, "img", date, "cnn-02-garlic-story-2.jpg"))).toBe(false);
 });

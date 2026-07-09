@@ -78,6 +78,6 @@ export async function runIngest(opts: {
     }),
   );
 
-  await timed("write", async () => writeSourceFiles({ articles: illustrated, contentDir }));
+  await timed("write", async () => writeSourceFiles({ articles: illustrated, contentDir, date }));
   return { written: illustrated.length, selection, timings };
 }
