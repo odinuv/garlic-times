@@ -35,6 +35,13 @@ content/src/
 content/img/cnn-*
 content/img/fox-*
 
+# CI archive scratch (state lives in Azure Blob, not git)
+/archive/
+*.tar.gz
+
+# Daily market snapshot — restored from Azure Blob, not committed
+content/market.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
