@@ -35,3 +35,14 @@ test("copyAssets tolerates a missing source directory", () => {
   const out = mkdtempSync(join(tmpdir(), "gt-out-"));
   expect(() => copyAssets(content, out)).not.toThrow();
 });
+
+test("copyAssets mirrors date-namespaced image subfolders", () => {
+  const content = mkdtempSync(join(tmpdir(), "gt-content-"));
+  const out = mkdtempSync(join(tmpdir(), "gt-out-"));
+  mkdirSync(join(content, "img", "2026-07-09"), { recursive: true });
+  writeFileSync(join(content, "img", "2026-07-09", "cnn-01-x.jpg"), "z");
+
+  copyAssets(content, out);
+
+  expect(existsSync(join(out, "img", "2026-07-09", "cnn-01-x.jpg"))).toBe(true);
+});
