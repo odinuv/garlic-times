@@ -34,6 +34,7 @@ content/sources/
 content/src/
 content/img/cnn-*
 content/img/fox-*
+content/img/????-??-??/
 
 # CI archive scratch (state lives in Azure Blob, not git)
 /archive/
