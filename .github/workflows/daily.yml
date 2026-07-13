@@ -1,0 +1,59 @@
+name: Daily edition
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: daily-edition
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore archive state
+        run: bun run scripts/archive-restore.ts
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_STORAGE_CONTAINER: ${{ secrets.AZURE_STORAGE_CONTAINER }}
+
+      - name: Ingest today's news
+        run: bun run ingest
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Author today's edition
+        run: bun run author
+
+      - name: Save archive state
+        run: bun run scripts/archive-save.ts
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_STORAGE_CONTAINER: ${{ secrets.AZURE_STORAGE_CONTAINER }}
+
+      - name: Generate the full site
+        run: bun run generate
+
+      - name: Deploy to Cloudflare Pages
+        run: bunx wrangler@3 pages deploy dist --project-name "$CF_PAGES_PROJECT" --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+
+      - name: Smoke-check the live site
+        run: bun run scripts/smoke-check.ts
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}

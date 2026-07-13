@@ -1,6 +1,7 @@
 import React from "react";
 import type { Edition } from "@/edition/schema";
-import { ArticleBlock, AdvertBox, RatesBox, RecipeBox, Rule } from "@/edition/components";
+// AdvertBox import removed while the advertisement section is commented out below (re-add to restore).
+import { ArticleBlock, RatesBox, RecipeBox, Rule } from "@/edition/components";
 
 export function EditionPage({
   edition,
@@ -21,21 +22,27 @@ export function EditionPage({
       <header>
         <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
           <span>{edition.editionNo}</span>
-          <span className="hidden sm:inline">Late London Edition</span>
+          <span className="hidden sm:inline">European Morning Edition</span>
           <span>{edition.price}</span>
         </div>
         <Rule />
-        <h1 className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 font-serif font-bold leading-none">
-          <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.the}</span>
-          <span className="text-2xl sm:text-5xl md:text-7xl italic">{masthead.middle}</span>
-          <img
-            src={masthead.glyph}
-            alt="The Garlic Times emblem"
-            width={120}
-            height={120}
-            className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
-          />
-          <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.end}</span>
+        <h1 className="font-serif font-bold leading-none">
+          <a
+            href="/"
+            aria-label="The Garlic Times — front page"
+            className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 no-underline"
+          >
+            <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.the}</span>
+            <span className="text-2xl sm:text-5xl md:text-7xl italic">{masthead.middle}</span>
+            <img
+              src={masthead.glyph}
+              alt="The Garlic Times emblem"
+              width={120}
+              height={120}
+              className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
+            />
+            <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.end}</span>
+          </a>
         </h1>
         <Rule />
         <p className="flex items-center justify-center gap-3 text-center text-[10px] uppercase tracking-[0.25em] sm:text-[12px] sm:tracking-[0.3em]">
@@ -62,20 +69,23 @@ export function EditionPage({
         <Rule thick />
       </header>
 
-      <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:break-inside-avoid [&>*]:mb-6">
-        {lead && <ArticleBlock article={lead} />}
+      {/* Articles flow across these page columns so the columns fill evenly;
+          only whole-unit blocks (boxes, photos, headlines) resist splitting. */}
+      <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:mb-6">
+        {lead && <ArticleBlock article={lead} number={1} date={edition.date} />}
         <RatesBox rates={edition.rates} />
-        {second && <ArticleBlock article={second} />}
-        <AdvertBox advert={edition.advert} />
+        {second && <ArticleBlock article={second} number={2} date={edition.date} />}
+        {/* Advertisement section temporarily hidden (data retained in the edition schema). */}
+        {/* <AdvertBox advert={edition.advert} /> */}
         {rest.map((a, i) => (
-          <ArticleBlock key={i} article={a} />
+          <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
         <RecipeBox recipe={edition.recipe} />
       </section>
 
       <Rule thick />
       <footer className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
-        <span>Printed and Published in London</span>
+        <span>Printed and Published in Europe</span>
         <a href="/about/" className="no-underline">
           © The Garlic Times Newspapers
         </a>

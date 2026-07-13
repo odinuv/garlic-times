@@ -1,1 +1,5 @@
-{ "headline": "Fox C", "summary": "Fox story C summary.", "image": { "src": "/img/main-photo.jpg", "alt": "x", "caption": "y" } }
+{
+  "headline": "Fox C",
+  "body": ["Fox story C summary."],
+  "image": { "src": "/img/main-photo.jpg", "alt": "x", "caption": "y" }
+}

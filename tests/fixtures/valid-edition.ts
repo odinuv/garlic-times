@@ -16,6 +16,7 @@ export const validEdition: Edition = {
       columns: 2,
       image: { src: "/img/main.jpg", alt: "Ministers leaving", caption: "Departing No. 10." },
       body: ["First paragraph with a **bold lead-in** and prose.", "Second paragraph."],
+      sourceUrl: "https://example.com/original",
     },
     {
       title: "A railway peace",
@@ -30,10 +31,11 @@ export const validEdition: Edition = {
     { title: "Photographs saved", size: "md", columns: 1, body: ["Body."] },
   ],
   rates: {
-    title: "Foreign Exchanges — £1 buys",
+    title: "The Garlic Market",
+    lead: { label: "Garlic, per kg", usd: "$3.00", eur: "€2.78", delta: "+0.1%" },
     rows: [
-      { label: "U.S. Dollar", value: "2.8012", delta: "+0.0004" },
-      { label: "Swiss Franc", value: "12.10", delta: "−0.01" },
+      { label: "Crude Oil", value: "74.00", delta: "−1.3%" },
+      { label: "Corn, Chicago", value: "455.0", delta: "+1.1%" },
     ],
   },
   recipe: {
@@ -42,7 +44,11 @@ export const validEdition: Edition = {
     meta: "Serves four. Preparation, half an hour; cooking, four hours.",
     body: ["**Suet crust:** 8 oz flour…", "**Filling:** 1 lb chuck steak…", "Sift the flour…"],
   },
-  advert: { src: "/img/advert.jpg", alt: "A fine wristwatch", caption: '"The watch that does not tire."' },
+  advert: {
+    src: "/img/advert.jpg",
+    alt: "A fine wristwatch",
+    caption: '"The watch that does not tire."',
+  },
   meta: {
     title: "The Garlic Times — Friday October 3, 1962",
     description: "The Garlic Times — front page edition.",

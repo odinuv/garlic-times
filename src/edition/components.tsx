@@ -29,26 +29,37 @@ export function Headline({
   );
 }
 
-export function ArticleBlock({ article }: { article: Article }) {
+export function ArticleBlock({
+  article,
+  number,
+  date,
+}: {
+  article: Article;
+  number: number;
+  date: string;
+}) {
   const colsClass =
     article.columns === 2 ? "sm:columns-2 sm:gap-5 [column-rule:1px_solid_var(--ink)]" : "";
   return (
-    <article className="mb-2">
-      <Headline size={article.size} className="mb-1">
+    <article id={`article-${number}`} className="mb-2">
+      {/* Keep the headline whole and glued to the text that follows it. */}
+      <Headline size={article.size} className="mb-1 break-inside-avoid break-after-avoid">
         {article.title}
       </Headline>
       {article.byline && (
-        <p className="my-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="my-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground break-after-avoid">
           {article.byline}
         </p>
       )}
       {article.image && (
-        <figure className="my-3">
+        <figure className="my-3 break-inside-avoid">
+          {/* Sketches are black ink on white; multiply blends the white into the
+              paper so there's no visible image box, whatever the exact white. */}
           <img
             src={article.image.src}
             alt={article.image.alt}
             loading="lazy"
-            className="w-full grayscale contrast-110"
+            className="w-full mix-blend-multiply"
           />
           {article.image.caption && (
             <figcaption className="mt-1 text-[11px] italic leading-snug text-muted-foreground">
@@ -57,10 +68,48 @@ export function ArticleBlock({ article }: { article: Article }) {
           )}
         </figure>
       )}
-      <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 [&>p]:break-inside-avoid ${colsClass}`}>
-        {article.body.map((p, i) => (
-          <p key={i}>{renderInline(p)}</p>
-        ))}
+      {/* Body text flows freely (no break-inside-avoid), so the article can
+          continue across the page columns and fill them evenly. */}
+      <div className={`text-[13.5px] leading-[1.45] [&>p]:mb-3 ${colsClass}`}>
+        {article.body.map((p, i) => {
+          const isLast = i === article.body.length - 1;
+          return (
+            <p key={i}>
+              {renderInline(p)}
+              {article.sourceUrl && isLast && (
+                <>
+                  {" "}
+                  <a
+                    href={article.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold no-underline"
+                    aria-label="Read the original article"
+                  >
+                    {">>"}
+                  </a>
+                </>
+              )}
+              {/* "Like" glyph floated to the right of the last line and nudged into
+                  the column gutter, so it keeps to one line and never overlaps text
+                  that runs to the edge. */}
+              {isLast && (
+                <a
+                  href={`/${date}/${number}/`}
+                  aria-label="Like this article"
+                  className="float-right ml-2 -mr-1 no-underline"
+                >
+                  <img
+                    src="/static/thumbs-up.png"
+                    alt="Thumbs up"
+                    loading="lazy"
+                    className="inline-block h-5 w-auto align-text-bottom mix-blend-multiply"
+                  />
+                </a>
+              )}
+            </p>
+          );
+        })}
       </div>
     </article>
   );
@@ -68,8 +117,16 @@ export function ArticleBlock({ article }: { article: Article }) {
 
 export function RatesBox({ rates }: { rates: Edition["rates"] }) {
   return (
-    <article className="border border-ink p-3">
+    <article className="border border-ink p-3 break-inside-avoid">
       <p className="mb-1 text-center text-[10px] uppercase tracking-[0.25em]">{rates.title}</p>
+      <Rule />
+      <div className="my-2 text-center">
+        <p className="text-[11px] uppercase tracking-[0.2em]">{rates.lead.label}</p>
+        <p className="text-[15px] font-semibold tabular-nums">
+          {rates.lead.usd} <span className="text-muted-foreground">/</span> {rates.lead.eur}{" "}
+          <span className="text-[12px] text-muted-foreground">{rates.lead.delta}</span>
+        </p>
+      </div>
       <Rule />
       <table className="w-full text-[13px]">
         <tbody>
@@ -77,7 +134,9 @@ export function RatesBox({ rates }: { rates: Edition["rates"] }) {
             <tr key={i} className={i < rates.rows.length - 1 ? "border-b border-ink/30" : ""}>
               <td className="py-1">{row.label}</td>
               <td className="py-1 text-right tabular-nums">{row.value}</td>
-              <td className="py-1 pl-2 text-right tabular-nums text-muted-foreground">{row.delta}</td>
+              <td className="py-1 pl-2 text-right tabular-nums text-muted-foreground">
+                {row.delta}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -88,7 +147,7 @@ export function RatesBox({ rates }: { rates: Edition["rates"] }) {
 
 export function RecipeBox({ recipe }: { recipe: Edition["recipe"] }) {
   return (
-    <article className="border border-ink p-4">
+    <article className="border border-ink p-4 break-inside-avoid">
       <p className="text-center text-[11px] uppercase tracking-[0.25em]">{recipe.kicker}</p>
       <Rule />
       <h3 className="text-center font-serif text-2xl font-bold leading-tight">{recipe.title}</h3>
@@ -105,10 +164,15 @@ export function RecipeBox({ recipe }: { recipe: Edition["recipe"] }) {
 
 export function AdvertBox({ advert }: { advert: EditionImage }) {
   return (
-    <article className="border border-ink p-4 flex flex-col">
+    <article className="border border-ink p-4 flex flex-col break-inside-avoid">
       <p className="text-center text-[11px] uppercase tracking-[0.25em]">Advertisement</p>
       <Rule />
-      <img src={advert.src} alt={advert.alt} loading="lazy" className="w-full grayscale contrast-110" />
+      <img
+        src={advert.src}
+        alt={advert.alt}
+        loading="lazy"
+        className="w-full grayscale contrast-110"
+      />
       {advert.caption && (
         <>
           <Rule />

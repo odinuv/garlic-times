@@ -14,6 +14,7 @@ export const articleSchema = z.object({
   size: z.enum(["sm", "md", "lg", "xl"]).default("md"),
   columns: z.union([z.literal(1), z.literal(2)]).default(2),
   image: imageSchema.optional(),
+  sourceUrl: z.string().optional(),
 });
 
 export const editionSchema = z.object({
@@ -31,9 +32,13 @@ export const editionSchema = z.object({
   articles: z.array(articleSchema).min(1),
   rates: z.object({
     title: z.string(),
-    rows: z.array(
-      z.object({ label: z.string(), value: z.string(), delta: z.string() }),
-    ),
+    lead: z.object({
+      label: z.string(),
+      usd: z.string(),
+      eur: z.string(),
+      delta: z.string(),
+    }),
+    rows: z.array(z.object({ label: z.string(), value: z.string(), delta: z.string() })),
   }),
   recipe: z.object({
     kicker: z.string(),

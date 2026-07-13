@@ -12,12 +12,15 @@ export function parityIsOdd(date: string): boolean {
 }
 
 // Fixed slot shapes; only the sources flip with parity.
+// Articles are single-column so their text can flow/break across the page's
+// 3 columns (newspaper-style), which lets those columns fill evenly. Only the
+// lead and secondary carry a photo.
 const SHAPES: Omit<Slot, "source">[] = [
-  { position: 1, size: "xl", columns: 2, hasImage: true },
-  { position: 2, size: "lg", columns: 2, hasImage: true },
-  { position: 3, size: "md", columns: 2, hasImage: false },
-  { position: 4, size: "md", columns: 2, hasImage: false },
-  { position: 5, size: "md", columns: 2, hasImage: false },
+  { position: 1, size: "xl", columns: 1, hasImage: true },
+  { position: 2, size: "lg", columns: 1, hasImage: true },
+  { position: 3, size: "md", columns: 1, hasImage: false },
+  { position: 4, size: "md", columns: 1, hasImage: false },
+  { position: 5, size: "md", columns: 1, hasImage: false },
 ];
 
 export function assignSlots(date: string): Slot[] {

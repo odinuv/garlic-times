@@ -1,0 +1,14 @@
+[
+  {
+    "kicker": "From the Kitchen",
+    "title": "Recipe One",
+    "meta": "Serves two.",
+    "body": ["Step one."]
+  },
+  {
+    "kicker": "From the Kitchen",
+    "title": "Recipe Two",
+    "meta": "Serves three.",
+    "body": ["Step two."]
+  }
+]

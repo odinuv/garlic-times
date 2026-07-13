@@ -8,7 +8,9 @@ import { renderDocument } from "@/edition/shell";
 
 export function loadEditions(srcDir: string): Edition[] {
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".json"));
-  const editions = files.map((f) => parseEdition(JSON.parse(readFileSync(join(srcDir, f), "utf8")), f));
+  const editions = files.map((f) =>
+    parseEdition(JSON.parse(readFileSync(join(srcDir, f), "utf8")), f),
+  );
   return editions.sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -28,6 +30,16 @@ function writeHtml(outDir: string, segments: string[], html: string) {
   writeFileSync(join(dir, "index.html"), html);
 }
 
+export function renderRedirect(date: string, n: number): string {
+  const url = `/${date}/#article-${n}`;
+  return (
+    `<!DOCTYPE html><meta charset="utf-8">` +
+    `<meta http-equiv="refresh" content="0;url=${url}">` +
+    `<script>location.replace(${JSON.stringify(url)})</script>` +
+    `<a href="${url}">Continue</a>`
+  );
+}
+
 export async function writePages(opts: {
   editions: Edition[];
   aboutHtml: string;
@@ -45,6 +57,10 @@ export async function writePages(opts: {
       body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
     });
     writeHtml(outDir, [edition.date], html);
+    edition.articles.forEach((_, idx) => {
+      const n = idx + 1;
+      writeHtml(outDir, [edition.date, String(n)], renderRedirect(edition.date, n));
+    });
     if (i === editions.length - 1) {
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, "index.html"), html); // root = newest
@@ -65,15 +81,23 @@ export function copyAssets(contentDir: string, outDir: string): void {
     const from = join(contentDir, sub);
     if (existsSync(from)) cpSync(from, join(outDir, sub), { recursive: true });
   }
+  // Root-level files served from the site root (e.g. /robots.txt), not under /static/.
+  for (const file of ["robots.txt"]) {
+    const from = join(contentDir, file);
+    if (existsSync(from)) cpSync(from, join(outDir, file));
+  }
 }
 
 export async function compileCss(inputCss: string, outCss: string): Promise<void> {
   // Use Bun.argv[0] so this works regardless of whether bun is on PATH
   const bunBin = Bun.argv[0];
-  const proc = Bun.spawn([bunBin, "x", "@tailwindcss/cli", "-i", inputCss, "-o", outCss, "--minify"], {
-    stdout: "inherit",
-    stderr: "inherit",
-  });
+  const proc = Bun.spawn(
+    [bunBin, "x", "@tailwindcss/cli", "-i", inputCss, "-o", outCss, "--minify"],
+    {
+      stdout: "inherit",
+      stderr: "inherit",
+    },
+  );
   const code = await proc.exited;
   if (code !== 0) throw new Error(`Tailwind CLI failed with exit code ${code}`);
 }
@@ -82,7 +106,9 @@ export async function build(opts: { contentDir: string; outDir: string }): Promi
   const { contentDir, outDir } = opts;
   const editions = loadEditions(join(contentDir, "src"));
   const aboutPath = join(contentDir, "about.html");
-  const aboutHtml = existsSync(aboutPath) ? readFileSync(aboutPath, "utf8") : "<section><h1>About</h1></section>";
+  const aboutHtml = existsSync(aboutPath)
+    ? readFileSync(aboutPath, "utf8")
+    : "<section><h1>About</h1></section>";
   await writePages({ editions, aboutHtml, outDir });
   copyAssets(contentDir, outDir);
   await compileCss("src/styles.css", join(outDir, "styles.css"));

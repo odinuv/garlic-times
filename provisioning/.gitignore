@@ -1,0 +1,10 @@
+# Terraform working files — never commit state or filled-in vars
+.terraform/
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+*.auto.tfvars
+crash.log
+crash.*.log

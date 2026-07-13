@@ -31,11 +31,15 @@
   * {
     border-color: var(--color-rule);
   }
-  html, body {
+  html,
+  body {
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-serif);
     font-feature-settings: "liga", "kern";
   }
-  p { text-align: justify; hyphens: auto; }
+  p {
+    text-align: justify;
+    hyphens: auto;
+  }
 }

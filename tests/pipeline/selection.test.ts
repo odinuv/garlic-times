@@ -17,7 +17,7 @@ test("odd day assigns Fox to slots 1,3,4 and CNN to 2,5", () => {
   expect(slots.map((s) => s.size)).toEqual(["xl", "lg", "md", "md", "md"]);
   expect(slots.map((s) => s.hasImage)).toEqual([true, true, false, false, false]);
   expect(slots.map((s) => s.position)).toEqual([1, 2, 3, 4, 5]);
-  expect(slots.every((s) => s.columns === 2)).toBe(true);
+  expect(slots.every((s) => s.columns === 1)).toBe(true);
   expect(slots.filter((s) => s.source === "fox")).toHaveLength(3);
   expect(slots.filter((s) => s.source === "cnn")).toHaveLength(2);
 });
@@ -33,7 +33,7 @@ test("pickStories returns one distinct story per slot from its source pool", () 
   const mk = (source: Source, n: number): SourceStory => ({
     source,
     headline: `${source}-${n}`,
-    summary: `${source} summary ${n}`,
+    body: [`${source} summary ${n}`],
   });
   const pools: Record<Source, SourceStory[]> = {
     fox: [mk("fox", 1), mk("fox", 2), mk("fox", 3)],
@@ -53,13 +53,13 @@ test("pickStories fills image slots with image-bearing stories when the source h
   const pools: Record<Source, SourceStory[]> = {
     // image-bearing story is NOT at index 0, so rng=()=>0 would miss it without the preference
     fox: [
-      { source: "fox", headline: "f-noimg-1", summary: "s" },
-      { source: "fox", headline: "f-img", summary: "s", image: img },
-      { source: "fox", headline: "f-noimg-2", summary: "s" },
+      { source: "fox", headline: "f-noimg-1", body: ["s"] },
+      { source: "fox", headline: "f-img", body: ["s"], image: img },
+      { source: "fox", headline: "f-noimg-2", body: ["s"] },
     ],
     cnn: [
-      { source: "cnn", headline: "c-img", summary: "s", image: img },
-      { source: "cnn", headline: "c-noimg", summary: "s" },
+      { source: "cnn", headline: "c-img", body: ["s"], image: img },
+      { source: "cnn", headline: "c-noimg", body: ["s"] },
     ],
   };
   const slots = assignSlots("2026-01-31"); // odd: [fox,cnn,fox,fox,cnn]; slots 1 & 2 carry images
@@ -76,13 +76,13 @@ test("pickStories fills image slots with image-bearing stories when the source h
 test("pickStories falls back to any story when an image slot's source has no image-bearing story", () => {
   const pools: Record<Source, SourceStory[]> = {
     fox: [
-      { source: "fox", headline: "f1", summary: "s" },
-      { source: "fox", headline: "f2", summary: "s" },
-      { source: "fox", headline: "f3", summary: "s" },
+      { source: "fox", headline: "f1", body: ["s"] },
+      { source: "fox", headline: "f2", body: ["s"] },
+      { source: "fox", headline: "f3", body: ["s"] },
     ],
     cnn: [
-      { source: "cnn", headline: "c1", summary: "s" },
-      { source: "cnn", headline: "c2", summary: "s" },
+      { source: "cnn", headline: "c1", body: ["s"] },
+      { source: "cnn", headline: "c2", body: ["s"] },
     ],
   };
   const slots = assignSlots("2026-01-31");
@@ -95,10 +95,10 @@ test("pickStories falls back to any story when an image slot's source has no ima
 
 test("pickStories throws when a pool is too small for its slots", () => {
   const pools: Record<Source, SourceStory[]> = {
-    fox: [{ source: "fox", headline: "f1", summary: "s" }], // only 1, need 3
+    fox: [{ source: "fox", headline: "f1", body: ["s"] }], // only 1, need 3
     cnn: [
-      { source: "cnn", headline: "c1", summary: "s" },
-      { source: "cnn", headline: "c2", summary: "s" },
+      { source: "cnn", headline: "c1", body: ["s"] },
+      { source: "cnn", headline: "c2", body: ["s"] },
     ],
   };
   const slots = assignSlots("2026-01-31");

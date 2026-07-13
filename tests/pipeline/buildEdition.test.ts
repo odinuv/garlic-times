@@ -16,7 +16,9 @@ test("builds a schema-valid edition with 5 articles for an odd day", () => {
   expect(edition.articles.slice(2).every((a) => a.image === undefined)).toBe(true);
   expect(edition.articles.map((a) => a.size)).toEqual(["xl", "lg", "md", "md", "md"]);
   expect(edition.recipe.title).toBeTruthy();
-  expect(edition.rates.rows.length).toBeGreaterThan(0);
+  expect(edition.rates.title).toBe("The Garlic Market");
+  expect(edition.rates.lead.usd).toMatch(/^\$\d/);
+  expect(edition.rates.rows).toHaveLength(2);
   expect(edition.advert.src).toBeTruthy();
 });
 

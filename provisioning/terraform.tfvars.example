@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+# Optional: omit to use ARM_SUBSCRIPTION_ID / `az account set` instead.
+# subscription_id = "00000000-0000-0000-0000-000000000000"
+
+resource_group_name = "the-garlic-times-rg"
+location            = "westeurope"
+
+# MUST be globally unique across all of Azure; 3-24 lowercase letters/digits.
+storage_account_name = "garlictimesstate"
+
+container_name = "garlic-times-state"
+
+# Durability: keep off for lowest cost, or turn on to allow rollback of a
+# corrupt state upload (old versions expire after noncurrent_version_expiration_days).
+enable_versioning                  = false
+noncurrent_version_expiration_days = 30
