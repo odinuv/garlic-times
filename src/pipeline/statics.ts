@@ -42,7 +42,7 @@ export function staticFields(
   return {
     displayDate,
     editionNo: editionNumber(date),
-    strapline: `EU · ${displayDate} · Twelve Cloves`,
+    strapline: `${displayDate} · Twelve Cloves`,
     price: "Price 6G.",
     masthead: { the: "The", middle: "Garlic", end: "Times", glyph: "/static/new-logo.png" },
     rates: computeRates(market),

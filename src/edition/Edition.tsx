@@ -85,7 +85,7 @@ export function EditionPage({
 
       <Rule thick />
       <footer className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]">
-        <span>Printed and Published in Europe</span>
+        <span>Printed in Europe</span>
         <a href="/about/" className="no-underline">
           © The Garlic Times Newspapers
         </a>
