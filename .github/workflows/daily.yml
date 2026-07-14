@@ -30,7 +30,25 @@ jobs:
           AZURE_STORAGE_CONTAINER: ${{ secrets.AZURE_STORAGE_CONTAINER }}
 
       - name: Ingest today's news
-        run: bun run ingest
+        # Ingest is non-deterministic (live feeds + Gemini) and fails loudly when a
+        # source yields too few usable articles. Re-running rebuilds the pool from
+        # scratch and usually clears the shortfall, so retry a few times before giving up.
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::Ingest attempt $attempt"
+            if bun run ingest; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Ingest attempt $attempt failed."
+            if [ "$attempt" -lt 3 ]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "Ingest failed after 3 attempts." >&2
+          exit 1
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
