@@ -63,6 +63,9 @@ jobs:
 
       - name: Generate the full site
         run: bun run generate
+        env:
+          # Cookieless Cloudflare Web Analytics beacon; no-op until the secret is set.
+          CF_BEACON_TOKEN: ${{ secrets.CF_BEACON_TOKEN }}
 
       - name: Deploy to Cloudflare Pages
         run: bunx wrangler@3 pages deploy dist --project-name "$CF_PAGES_PROJECT" --branch main

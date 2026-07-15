@@ -44,8 +44,9 @@ export async function writePages(opts: {
   editions: Edition[];
   aboutHtml: string;
   outDir: string;
+  analyticsBeaconToken?: string;
 }): Promise<void> {
-  const { editions, aboutHtml, outDir } = opts;
+  const { editions, aboutHtml, outDir, analyticsBeaconToken } = opts;
   if (editions.length === 0) throw new Error("No editions found in content/src");
 
   editions.forEach((edition, i) => {
@@ -55,6 +56,7 @@ export async function writePages(opts: {
       description: edition.meta.description,
       faviconHref: edition.masthead.glyph,
       body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
+      analyticsBeaconToken,
     });
     writeHtml(outDir, [edition.date], html);
     edition.articles.forEach((_, idx) => {
@@ -72,6 +74,7 @@ export async function writePages(opts: {
     description: "About The Garlic Times.",
     faviconHref: editions[editions.length - 1].masthead.glyph,
     body: React.createElement("div", { dangerouslySetInnerHTML: { __html: aboutHtml } }),
+    analyticsBeaconToken,
   });
   writeHtml(outDir, ["about"], aboutDoc);
 }
@@ -102,21 +105,33 @@ export async function compileCss(inputCss: string, outCss: string): Promise<void
   if (code !== 0) throw new Error(`Tailwind CLI failed with exit code ${code}`);
 }
 
-export async function build(opts: { contentDir: string; outDir: string }): Promise<void> {
-  const { contentDir, outDir } = opts;
+export async function build(opts: {
+  contentDir: string;
+  outDir: string;
+  analyticsBeaconToken?: string;
+}): Promise<void> {
+  const { contentDir, outDir, analyticsBeaconToken } = opts;
   const editions = loadEditions(join(contentDir, "src"));
   const aboutPath = join(contentDir, "about.html");
   const aboutHtml = existsSync(aboutPath)
     ? readFileSync(aboutPath, "utf8")
     : "<section><h1>About</h1></section>";
-  await writePages({ editions, aboutHtml, outDir });
+  await writePages({ editions, aboutHtml, outDir, analyticsBeaconToken });
   copyAssets(contentDir, outDir);
   await compileCss("src/styles.css", join(outDir, "styles.css"));
 }
 
 if (import.meta.main) {
-  build({ contentDir: "content", outDir: "dist" })
-    .then(() => console.log("Generated dist/"))
+  // Optional cookieless analytics beacon; no-op when the env var is unset.
+  const analyticsBeaconToken = process.env.CF_BEACON_TOKEN?.trim() || undefined;
+  build({ contentDir: "content", outDir: "dist", analyticsBeaconToken })
+    .then(() =>
+      console.log(
+        analyticsBeaconToken
+          ? "Generated dist/ (with Cloudflare Web Analytics beacon)"
+          : "Generated dist/ (analytics beacon disabled: CF_BEACON_TOKEN unset)",
+      ),
+    )
     .catch((err) => {
       console.error(err instanceof Error ? err.message : err);
       process.exit(1);

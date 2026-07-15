@@ -16,12 +16,36 @@ test("produces a complete doctype document with head metadata", () => {
   expect(html).toContain("<main>hello</main>");
 });
 
-test("emits no script tags", () => {
+test("emits no script tags when no analytics beacon token is provided", () => {
   const html = renderDocument({
     title: "T",
     description: "D",
     faviconHref: "/static/coat-of-arms.png",
     body: <main>hi</main>,
+  });
+  expect(html).not.toContain("<script");
+});
+
+test("emits the Cloudflare Web Analytics beacon when a token is provided", () => {
+  const html = renderDocument({
+    title: "T",
+    description: "D",
+    faviconHref: "/static/coat-of-arms.png",
+    body: <main>hi</main>,
+    analyticsBeaconToken: "abc123token",
+  });
+  expect(html).toContain("https://static.cloudflareinsights.com/beacon.min.js");
+  expect(html).toContain('data-cf-beacon="{&quot;token&quot;:&quot;abc123token&quot;}"');
+  expect(html).toContain("defer");
+});
+
+test("ignores an empty analytics beacon token (stays script-free)", () => {
+  const html = renderDocument({
+    title: "T",
+    description: "D",
+    faviconHref: "/static/coat-of-arms.png",
+    body: <main>hi</main>,
+    analyticsBeaconToken: "",
   });
   expect(html).not.toContain("<script");
 });
