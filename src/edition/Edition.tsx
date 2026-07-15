@@ -33,6 +33,10 @@ export function EditionPage({
   // Column flow mirrors the original front page:
   // article[0], rates, article[1], advert, article[2..], recipe.
   const [lead, second, ...rest] = articles;
+  // The first article carrying a photo is the largest-contentful-paint
+  // candidate: load it eagerly at high priority rather than lazily. All other
+  // photos stay lazy so they don't compete with it for bandwidth.
+  const lcpImageIndex = articles.findIndex((a) => a.image);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8">
@@ -91,13 +95,33 @@ export function EditionPage({
       {/* Articles flow across these page columns so the columns fill evenly;
           only whole-unit blocks (boxes, photos, headlines) resist splitting. */}
       <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:mb-6">
-        {lead && <ArticleBlock article={lead} number={1} date={edition.date} />}
+        {lead && (
+          <ArticleBlock
+            article={lead}
+            number={1}
+            date={edition.date}
+            priority={lcpImageIndex === 0}
+          />
+        )}
         <RatesBox rates={edition.rates} />
-        {second && <ArticleBlock article={second} number={2} date={edition.date} />}
+        {second && (
+          <ArticleBlock
+            article={second}
+            number={2}
+            date={edition.date}
+            priority={lcpImageIndex === 1}
+          />
+        )}
         {/* Advertisement section temporarily hidden (data retained in the edition schema). */}
         {/* <AdvertBox advert={edition.advert} /> */}
         {rest.map((a, i) => (
-          <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
+          <ArticleBlock
+            key={i}
+            article={a}
+            number={i + 3}
+            date={edition.date}
+            priority={lcpImageIndex === i + 2}
+          />
         ))}
         <RecipeBox recipe={edition.recipe} />
         {/* Owned-audience capture — the last box in the column flow, after the
