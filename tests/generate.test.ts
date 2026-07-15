@@ -1,6 +1,6 @@
 // tests/generate.test.ts
 import { test, expect } from "bun:test";
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -9,6 +9,8 @@ import {
   writePages,
   renderRedirect,
   editionSocial,
+  imageDimensions,
+  withImageDimensions,
 } from "../scripts/generate";
 import { validEdition } from "./fixtures/valid-edition";
 
@@ -30,6 +32,55 @@ test("editionSocial falls back to the masthead glyph as a summary card", () => {
   const social = editionSocial(noPhotos);
   expect(social.image).toBe("https://www.thegarlictimes.com/static/coat-of-arms.png");
   expect(social.twitterCard).toBe("summary");
+});
+
+// A 24-byte PNG header advertising the given dimensions (enough for the reader).
+function pngHeader(width: number, height: number): Uint8Array {
+  const buf = new Uint8Array(24);
+  buf.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  const view = new DataView(buf.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return buf;
+}
+
+test("imageDimensions reads PNG width/height from the IHDR chunk", () => {
+  expect(imageDimensions(pngHeader(800, 600))).toEqual({ width: 800, height: 600 });
+});
+
+test("imageDimensions reads JPEG width/height from the SOF0 marker", () => {
+  // FFD8 SOI, then FFC0 SOF0: length, precision, height=0x012C(300), width=0x028A(650).
+  const jpeg = new Uint8Array([
+    0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x01, 0x2c, 0x02, 0x8a, 0x00,
+  ]);
+  expect(imageDimensions(jpeg)).toEqual({ width: 650, height: 300 });
+});
+
+test("imageDimensions returns null for unrecognized bytes", () => {
+  expect(imageDimensions(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]))).toBeNull();
+});
+
+test("withImageDimensions fills dimensions from files on disk and skips missing ones", () => {
+  const content = mkdtempSync(join(tmpdir(), "gt-dim-"));
+  mkdirSync(join(content, "img"), { recursive: true });
+  writeFileSync(join(content, "img", "lead.png"), pngHeader(1200, 800));
+
+  const edition = {
+    ...validEdition,
+    articles: validEdition.articles.map((a, i) => {
+      if (i === 0) return { ...a, image: { src: "/img/lead.png", alt: "on disk" } };
+      if (i === 1) return { ...a, image: { src: "/img/absent.jpg", alt: "missing" } };
+      return a;
+    }),
+  };
+
+  const [out] = withImageDimensions([edition], content);
+  // present file → dimensions filled
+  expect(out.articles[0].image).toMatchObject({ width: 1200, height: 800 });
+  // missing file → left as-is (no crash, no dimensions)
+  expect(out.articles[1].image?.width).toBeUndefined();
+  // article without a photo is untouched
+  expect(out.articles[2].image).toBeUndefined();
 });
 
 test("loadEditions returns editions sorted ascending by date", () => {

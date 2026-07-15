@@ -33,10 +33,11 @@ export function EditionPage({
   // Column flow mirrors the original front page:
   // article[0], rates, article[1], advert, article[2..], recipe.
   const [lead, second, ...rest] = articles;
-  // The first article carrying a photo is the largest-contentful-paint
-  // candidate: load it eagerly at high priority rather than lazily. All other
-  // photos stay lazy so they don't compete with it for bandwidth.
-  const lcpImageIndex = articles.findIndex((a) => a.image);
+  // Only the lead article sits above the fold on mobile, so only its photo is a
+  // safe largest-contentful-paint candidate to eager-load at high priority. If
+  // the lead has no photo the masthead/headline is the LCP, and every photo
+  // stays lazy so nothing competes with above-the-fold paint for bandwidth.
+  const lcpImageIndex = articles[0]?.image ? 0 : -1;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8">

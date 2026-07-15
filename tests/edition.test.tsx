@@ -120,3 +120,43 @@ test("renders no signup box when the newsletter config is absent", () => {
   );
   expect(html).not.toContain('aria-label="Subscribe"');
 });
+
+const imgTag = (html: string, src: string) =>
+  html.match(new RegExp(`<img[^>]*src="${src.replace(/[/.]/g, "\\$&")}"[^>]*>`))?.[0] ?? "";
+
+test("the first photo loads eagerly at high priority (LCP); later photos stay lazy", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  // article[0] carries the first photo → it is the LCP candidate.
+  const lead = imgTag(html, "/img/main.jpg");
+  expect(lead).toContain('loading="eager"');
+  expect(lead).toContain('fetchPriority="high"');
+  expect(lead).toContain('decoding="async"');
+  // article[1]'s photo must not compete for the initial-load bandwidth.
+  const second = imgTag(html, "/img/second.jpg");
+  expect(second).toContain('loading="lazy"');
+  expect(second).not.toContain('fetchPriority="high"');
+});
+
+test("photos render intrinsic width/height to reserve layout space (zero CLS)", () => {
+  const ed = {
+    ...validEdition,
+    articles: validEdition.articles.map((a, i) =>
+      i === 0 ? { ...a, image: { ...a.image!, width: 1200, height: 800 } } : a,
+    ),
+  };
+  const html = renderToStaticMarkup(<EditionPage edition={ed} prevDate={null} nextDate={null} />);
+  const lead = imgTag(html, "/img/main.jpg");
+  expect(lead).toContain('width="1200"');
+  expect(lead).toContain('height="800"');
+});
+
+test("the masthead emblem is fetched at high priority (it is the mobile LCP)", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  const emblem = html.match(/<img[^>]*alt="The Garlic Times emblem"[^>]*>/)?.[0] ?? "";
+  expect(emblem).toContain('fetchPriority="high"');
+  expect(emblem).toContain('decoding="async"');
+});
