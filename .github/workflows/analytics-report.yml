@@ -60,8 +60,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet -- docs/traffic-log.md; then
-            git add docs/traffic-log.md
+          git add docs/traffic-log.md
+          if ! git diff --cached --quiet -- docs/traffic-log.md; then
             git commit -m "chore(analytics): weekly traffic baseline"
             git push
           else
