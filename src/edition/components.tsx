@@ -1,6 +1,7 @@
 import React from "react";
 import type { Article, Edition, EditionImage } from "@/edition/schema";
 import { renderInline } from "@/edition/inline";
+import { absoluteUrl } from "@/edition/site";
 
 export function Rule({ thick = false }: { thick?: boolean }) {
   return <hr className={`my-3 border-0 bg-ink ${thick ? "h-[3px]" : "h-px"}`} aria-hidden />;
@@ -40,6 +41,16 @@ export function ArticleBlock({
 }) {
   const colsClass =
     article.columns === 2 ? "sm:columns-2 sm:gap-5 [column-rule:1px_solid_var(--ink)]" : "";
+  // Deep link to this article on its edition page. Absolute so it survives being
+  // shared out of context (native share sheet / X compose window).
+  const shareUrl = absoluteUrl(`/${date}/#article-${number}`);
+  const shareText = `${article.title} — The Garlic Times`;
+  // No-JS fallback: a plain X/Twitter compose link (one click, works everywhere).
+  // Progressively upgraded to the native share sheet by the inline script on the
+  // edition page when navigator.share is available.
+  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    shareText,
+  )}&url=${encodeURIComponent(shareUrl)}`;
   return (
     <article id={`article-${number}`} className="mb-2">
       {/* Keep the headline whole and glued to the text that follows it. */}
@@ -105,6 +116,22 @@ export function ArticleBlock({
                     loading="lazy"
                     className="inline-block h-5 w-auto align-text-bottom mix-blend-multiply"
                   />
+                </a>
+              )}
+              {/* One-click share. Falls back to an X compose link with no JS; the
+                  edition page's inline script upgrades it to the native share sheet. */}
+              {isLast && (
+                <a
+                  href={xShareUrl}
+                  data-share-url={shareUrl}
+                  data-share-title={article.title}
+                  data-share-text={shareText}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Share this article"
+                  className="js-share float-right ml-2 align-text-bottom text-[10px] font-bold uppercase tracking-[0.18em] no-underline"
+                >
+                  Share
                 </a>
               )}
             </p>

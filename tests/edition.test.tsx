@@ -70,3 +70,26 @@ test("each article has a thumbs-up like link to /<date>/<n>/", () => {
   // one like link per article
   expect((html.match(/aria-label="Like this article"/g) || []).length).toBe(5);
 });
+
+test("each article has a one-click share affordance", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  // one share control per article (5)
+  expect((html.match(/aria-label="Share this article"/g) || []).length).toBe(5);
+  expect((html.match(/class="js-share/g) || []).length).toBe(5);
+  // no-JS fallback: X/Twitter compose link carrying an absolute deep URL
+  expect(html).toContain("https://twitter.com/intent/tweet?text=");
+  expect(html).toContain(
+    encodeURIComponent("https://www.thegarlictimes.com/2026-06-27/#article-1"),
+  );
+  // data hooks the enhancement script reads to open the native share sheet
+  expect(html).toContain('data-share-url="https://www.thegarlictimes.com/2026-06-27/#article-1"');
+});
+
+test("edition page ships the share-enhancement script", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  expect(html).toContain("navigator.share");
+});

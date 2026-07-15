@@ -4,7 +4,34 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync
 import { join } from "node:path";
 import { parseEdition, type Edition } from "@/edition/schema";
 import { EditionPage } from "@/edition/Edition";
-import { renderDocument } from "@/edition/shell";
+import { renderDocument, type SocialMeta } from "@/edition/shell";
+import { absoluteUrl } from "@/edition/site";
+
+/**
+ * Choose the share-card image for an edition: the first article that carries a
+ * photo (rich `summary_large_image` card) or the masthead glyph as a fallback
+ * (small `summary` card). Returned paths are made absolute for OG/Twitter.
+ */
+export function editionSocial(edition: Edition): SocialMeta {
+  const withImage = edition.articles.find((a) => a.image);
+  const canonicalUrl = absoluteUrl(`/${edition.date}/`);
+  if (withImage?.image) {
+    return {
+      canonicalUrl,
+      image: absoluteUrl(withImage.image.src),
+      imageAlt: withImage.image.alt || edition.meta.title,
+      ogType: "website",
+      twitterCard: "summary_large_image",
+    };
+  }
+  return {
+    canonicalUrl,
+    image: absoluteUrl(edition.masthead.glyph),
+    imageAlt: "The Garlic Times",
+    ogType: "website",
+    twitterCard: "summary",
+  };
+}
 
 export function loadEditions(srcDir: string): Edition[] {
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".json"));
@@ -55,6 +82,7 @@ export async function writePages(opts: {
       title: edition.meta.title,
       description: edition.meta.description,
       faviconHref: edition.masthead.glyph,
+      social: editionSocial(edition),
       body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
       analyticsBeaconToken,
     });
@@ -69,10 +97,18 @@ export async function writePages(opts: {
     }
   });
 
+  const aboutGlyph = editions[editions.length - 1].masthead.glyph;
   const aboutDoc = renderDocument({
     title: "About — The Garlic Times",
     description: "About The Garlic Times.",
-    faviconHref: editions[editions.length - 1].masthead.glyph,
+    faviconHref: aboutGlyph,
+    social: {
+      canonicalUrl: absoluteUrl("/about/"),
+      image: absoluteUrl(aboutGlyph),
+      imageAlt: "The Garlic Times",
+      ogType: "website",
+      twitterCard: "summary",
+    },
     body: React.createElement("div", { dangerouslySetInnerHTML: { __html: aboutHtml } }),
     analyticsBeaconToken,
   });

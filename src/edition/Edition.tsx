@@ -3,6 +3,19 @@ import type { Edition } from "@/edition/schema";
 // AdvertBox import removed while the advertisement section is commented out below (re-add to restore).
 import { ArticleBlock, RatesBox, RecipeBox, Rule } from "@/edition/components";
 
+// Progressive enhancement: when the browser supports the Web Share API, a click
+// on any ".js-share" link opens the native OS share sheet instead of following
+// the X/Twitter compose fallback href. No framework, no external JS — one tiny
+// delegated listener. Where navigator.share is absent (most desktops) the link
+// behaves as a normal one-click X compose link.
+const SHARE_SCRIPT =
+  'document.addEventListener("click",function(e){' +
+  'var t=e.target.closest?e.target.closest(".js-share"):null;' +
+  "if(!t||!navigator.share)return;e.preventDefault();" +
+  'navigator.share({title:t.getAttribute("data-share-title")||document.title,' +
+  'text:t.getAttribute("data-share-text")||"",' +
+  'url:t.getAttribute("data-share-url")||location.href}).catch(function(){});});';
+
 export function EditionPage({
   edition,
   prevDate,
@@ -91,6 +104,7 @@ export function EditionPage({
         </a>
         <span>Page 1</span>
       </footer>
+      <script dangerouslySetInnerHTML={{ __html: SHARE_SCRIPT }} />
     </main>
   );
 }
