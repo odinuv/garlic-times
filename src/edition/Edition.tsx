@@ -56,6 +56,8 @@ export function EditionPage({
               alt="The Garlic Times emblem"
               width={120}
               height={120}
+              fetchPriority="high"
+              decoding="async"
               className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
             />
             <span className="text-2xl sm:text-5xl md:text-7xl">{masthead.end}</span>
