@@ -3,6 +3,7 @@ import React from "react";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync } from "node:fs";
 import { join } from "node:path";
 import { parseEdition, type Edition } from "@/edition/schema";
+import { buildFeed } from "@/edition/feed";
 import { EditionPage } from "@/edition/Edition";
 import { renderDocument, type SocialMeta } from "@/edition/shell";
 import { absoluteUrl } from "@/edition/site";
@@ -153,6 +154,10 @@ export async function build(opts: {
     ? readFileSync(aboutPath, "utf8")
     : "<section><h1>About</h1></section>";
   await writePages({ editions, aboutHtml, outDir, analyticsBeaconToken });
+  // Owned-audience capture: an RSS feed of recent articles at /rss.xml so readers
+  // can subscribe in any feed reader. Deterministic — derived from the editions.
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, "rss.xml"), buildFeed(editions));
   copyAssets(contentDir, outDir);
   await compileCss("src/styles.css", join(outDir, "styles.css"));
 }
