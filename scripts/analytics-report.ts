@@ -64,12 +64,27 @@ async function gql(query: string, variables: Record<string, unknown>): Promise<a
   return json.data;
 }
 
-async function resolveZones(): Promise<Zone[]> {
-  const q = accountId ? `?account.id=${accountId}&per_page=50` : `?per_page=50`;
-  const json = await cfGet(`/zones${q}`);
-  const all: Zone[] = (json.result ?? []).map((z: any) => ({ id: z.id, name: z.name }));
+async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
+  // Primary: REST /zones (needs Zone:Read). Fallback: GraphQL viewer.zones,
+  // which lists whatever zones the token is scoped to see.
+  let all: Zone[] = [];
+  try {
+    const q = accountId ? `?account.id=${accountId}&per_page=50` : `?per_page=50`;
+    const json = await cfGet(`/zones${q}`);
+    all = (json.result ?? []).map((z: any) => ({ id: z.id, name: z.name }));
+  } catch {
+    // fall through to GraphQL
+  }
+  if (!all.length) {
+    try {
+      const data = await gql(`query { viewer { zones { zoneTag } } }`, {});
+      all = (data?.viewer?.zones ?? []).map((z: any) => ({ id: z.zoneTag, name: z.zoneTag }));
+    } catch {
+      // token cannot see any zones
+    }
+  }
   const matched = all.filter((z) => zoneFilter.some((f) => z.name.toLowerCase() === f));
-  return matched.length ? matched : all;
+  return { zones: matched.length ? matched : all, seenCount: all.length };
 }
 
 async function zoneTotals(zoneId: string) {
@@ -181,8 +196,16 @@ function table(rows: string[][], headers: string[]): string {
   return [head, sep, body].join("\n");
 }
 
+async function emit(lines: string[]) {
+  const report = lines.join("\n");
+  console.log(report);
+  if (process.env.GITHUB_STEP_SUMMARY)
+    await Bun.write(process.env.GITHUB_STEP_SUMMARY, report + "\n");
+  if (process.env.REPORT_OUT) await Bun.write(process.env.REPORT_OUT, report + "\n");
+}
+
 async function main() {
-  const zones = await resolveZones();
+  const { zones, seenCount } = await resolveZones();
   const lines: string[] = [];
   lines.push(`## Traffic baseline — ${sinceDate} → ${untilDate} (${days}d)`);
   lines.push("");
@@ -192,9 +215,13 @@ async function main() {
   lines.push("");
 
   if (!zones.length) {
-    lines.push("> No zones resolved for this token/account.");
-    console.log(lines.join("\n"));
-    return;
+    lines.push(
+      seenCount === 0
+        ? "> **No zones visible to this API token.** The current `CLOUDFLARE_API_TOKEN` is scoped for Pages deploys only. Grant it **Zone → Analytics: Read** (and Account → Account Analytics: Read for RUM referrers) to populate this report. See docs/analytics.md."
+        : `> No zones matched the site filter (\`${zoneFilter.join(", ")}\`) among ${seenCount} visible zone(s). Set the ZONES env to one of them.`,
+    );
+    await emit(lines);
+    return; // not an error — a known, documented state until token scope is granted
   }
 
   let grandPV = 0,
@@ -263,15 +290,7 @@ async function main() {
     `**Totals across zones:** ${grandPV} page views · ${grandUniq} unique visitors (last ${days}d).`,
   );
 
-  const report = lines.join("\n");
-  console.log(report);
-
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    await Bun.write(process.env.GITHUB_STEP_SUMMARY, report + "\n");
-  }
-  if (process.env.REPORT_OUT) {
-    await Bun.write(process.env.REPORT_OUT, report + "\n");
-  }
+  await emit(lines);
 }
 
 main().catch((err) => {

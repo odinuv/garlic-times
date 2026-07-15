@@ -43,6 +43,10 @@ jobs:
 
       - name: Append to traffic log
         run: |
+          if [ ! -f report.md ]; then
+            echo "No report.md produced; skipping log update."
+            exit 0
+          fi
           mkdir -p docs
           touch docs/traffic-log.md
           if [ ! -s docs/traffic-log.md ]; then
