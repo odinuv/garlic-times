@@ -14,6 +14,8 @@
 //   bun run scripts/analytics-report.ts
 // Optional: DAYS=7  ZONES="thegarlictimes.com,garlictimes.com"
 
+import { createAzureBlobStore, type BlobStore } from "@/archive/blob";
+
 const API = "https://api.cloudflare.com/client/v4";
 const GQL = `${API}/graphql`;
 
@@ -25,7 +27,26 @@ const zoneFilter = (process.env.ZONES ?? "thegarlictimes.com,garlictimes.com")
   .map((z) => z.trim().toLowerCase())
   .filter(Boolean);
 
-if (!token) throw new Error("CLOUDFLARE_API_TOKEN is not set");
+// Structured result assembled from Cloudflare before any markdown is rendered.
+// renderMarkdown() turns this into the human-readable report; persist() stores
+// both the JSON and the markdown in the analytics blob container.
+export interface TrafficReport {
+  generatedAt: string; // ISO
+  window: { sinceDate: string; untilDate: string; days: number };
+  seenZoneCount: number;
+  zones: Array<{
+    name: string;
+    id: string;
+    pageViews: number;
+    uniques: number;
+    requests: number;
+    topPages: { path: string; count: number }[];
+    topCountries: { country: string; count: number }[];
+    error?: string; // set when this zone's analytics query failed
+  }>;
+  referrers: { referrer: string; count: number }[] | null;
+  totals: { pageViews: number; uniques: number };
+}
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -196,16 +217,64 @@ function table(rows: string[][], headers: string[]): string {
   return [head, sep, body].join("\n");
 }
 
-async function emit(lines: string[]) {
-  const report = lines.join("\n");
-  console.log(report);
-  if (process.env.GITHUB_STEP_SUMMARY)
-    await Bun.write(process.env.GITHUB_STEP_SUMMARY, report + "\n");
-  if (process.env.REPORT_OUT) await Bun.write(process.env.REPORT_OUT, report + "\n");
+// Gather the structured report from Cloudflare. Pure data — no markdown.
+async function buildReport(): Promise<TrafficReport> {
+  const { zones, seenCount } = await resolveZones();
+  const report: TrafficReport = {
+    generatedAt: now.toISOString(),
+    window: { sinceDate, untilDate, days },
+    seenZoneCount: seenCount,
+    zones: [],
+    referrers: null,
+    totals: { pageViews: 0, uniques: 0 },
+  };
+
+  if (!zones.length) {
+    // No analytics to report — fail the run rather than emitting a placeholder.
+    throw new Error(
+      seenCount === 0
+        ? "No zones visible to this API token. Grant CLOUDFLARE_API_TOKEN the Zone → Analytics: Read scope (and Account → Account Analytics: Read for RUM referrers). See docs/analytics.md."
+        : `No zones matched the site filter (${zoneFilter.join(", ")}) among ${seenCount} visible zone(s). Set the ZONES env to one of them.`,
+    );
+  }
+
+  for (const z of zones) {
+    try {
+      const totals = await zoneTotals(z.id);
+      const [pages, countries] = await Promise.all([topPages(z.id), topCountries(z.id)]);
+      report.zones.push({
+        name: z.name,
+        id: z.id,
+        pageViews: totals.pageViews,
+        uniques: totals.uniques,
+        requests: totals.requests,
+        topPages: pages,
+        topCountries: countries,
+      });
+      report.totals.pageViews += totals.pageViews;
+      report.totals.uniques += totals.uniques;
+    } catch (err) {
+      report.zones.push({
+        name: z.name,
+        id: z.id,
+        pageViews: 0,
+        uniques: 0,
+        requests: 0,
+        topPages: [],
+        topCountries: [],
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  report.referrers = await topReferrers();
+  return report;
 }
 
-async function main() {
-  const { zones, seenCount } = await resolveZones();
+// Render the report to markdown — byte-for-byte the same output the workflow
+// job summary showed before this change. Pure and exported for tests.
+export function renderMarkdown(report: TrafficReport): string {
+  const { sinceDate, untilDate, days } = report.window;
   const lines: string[] = [];
   lines.push(`## Traffic baseline — ${sinceDate} → ${untilDate} (${days}d)`);
   lines.push("");
@@ -214,41 +283,28 @@ async function main() {
   );
   lines.push("");
 
-  if (!zones.length) {
-    lines.push(
-      seenCount === 0
-        ? "> **No zones visible to this API token.** The current `CLOUDFLARE_API_TOKEN` is scoped for Pages deploys only. Grant it **Zone → Analytics: Read** (and Account → Account Analytics: Read for RUM referrers) to populate this report. See docs/analytics.md."
-        : `> No zones matched the site filter (\`${zoneFilter.join(", ")}\`) among ${seenCount} visible zone(s). Set the ZONES env to one of them.`,
-    );
-    await emit(lines);
-    return; // not an error — a known, documented state until token scope is granted
-  }
-
-  let grandPV = 0,
-    grandUniq = 0;
-  for (const z of zones) {
+  for (const z of report.zones) {
     lines.push(`### ${z.name}`);
-    try {
-      const totals = await zoneTotals(z.id);
-      grandPV += totals.pageViews;
-      grandUniq += totals.uniques;
+    if (z.error) {
+      lines.push("");
+      lines.push(`> ⚠️ Could not read analytics for this zone: ${z.error}`);
+    } else {
       lines.push("");
       lines.push(
         table(
           [
-            ["Page views", String(totals.pageViews)],
-            ["Unique visitors", String(totals.uniques)],
-            ["Total requests", String(totals.requests)],
+            ["Page views", String(z.pageViews)],
+            ["Unique visitors", String(z.uniques)],
+            ["Total requests", String(z.requests)],
           ],
           ["Metric", `Last ${days}d`],
         ),
       );
-      const [pages, countries] = await Promise.all([topPages(z.id), topCountries(z.id)]);
       lines.push("");
       lines.push("**Top pages**");
       lines.push(
         table(
-          pages.map((p: { path: string; count: number }) => [p.path, String(p.count)]),
+          z.topPages.map((p) => [p.path, String(p.count)]),
           ["Path", "Views"],
         ),
       );
@@ -256,22 +312,16 @@ async function main() {
       lines.push("**Top countries**");
       lines.push(
         table(
-          countries.map((c: { country: string; count: number }) => [c.country, String(c.count)]),
+          z.topCountries.map((c) => [c.country, String(c.count)]),
           ["Country", "Requests"],
         ),
-      );
-    } catch (err) {
-      lines.push("");
-      lines.push(
-        `> ⚠️ Could not read analytics for this zone: ${err instanceof Error ? err.message : err}`,
       );
     }
     lines.push("");
   }
 
-  const referrers = await topReferrers();
   lines.push("### Top referrers (Web Analytics / RUM)");
-  if (referrers === null) {
+  if (report.referrers === null) {
     lines.push("");
     lines.push(
       "_Not available yet — enable Cloudflare Web Analytics (set `CF_BEACON_TOKEN`) and allow ~1 week of data. See docs/analytics.md._",
@@ -280,20 +330,59 @@ async function main() {
     lines.push("");
     lines.push(
       table(
-        referrers.map((r) => [r.referrer, String(r.count)]),
+        report.referrers.map((r) => [r.referrer, String(r.count)]),
         ["Referrer", "Pageloads"],
       ),
     );
   }
   lines.push("");
   lines.push(
-    `**Totals across zones:** ${grandPV} page views · ${grandUniq} unique visitors (last ${days}d).`,
+    `**Totals across zones:** ${report.totals.pageViews} page views · ${report.totals.uniques} unique visitors (last ${days}d).`,
   );
 
-  await emit(lines);
+  return lines.join("\n");
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+async function emit(markdown: string) {
+  console.log(markdown);
+  if (process.env.GITHUB_STEP_SUMMARY)
+    await Bun.write(process.env.GITHUB_STEP_SUMMARY, markdown + "\n");
+}
+
+// Persist to the analytics blob container: per-run raw JSON + markdown (keyed by
+// the until-date, so re-runs overwrite rather than accumulate), plus a rolling,
+// newest-first human-readable log that replaces the old committed git file.
+export async function persist(store: BlobStore, report: TrafficReport, markdown: string) {
+  const key = report.window.untilDate; // YYYY-MM-DD
+  await store.uploadText(`raw/${key}.json`, JSON.stringify(report, null, 2));
+  await store.uploadText(`reports/${key}.md`, markdown);
+  const prev =
+    (await store.downloadText("traffic-log.md")) ??
+    "# Traffic log\n\nWeekly baselines, newest first.\n";
+  await store.uploadText("traffic-log.md", `\n---\n\n${markdown}\n${prev}`);
+}
+
+async function main() {
+  if (!token) throw new Error("CLOUDFLARE_API_TOKEN is not set");
+  const report = await buildReport();
+  const markdown = renderMarkdown(report);
+  await emit(markdown);
+
+  // Persist only when the Azure analytics container is configured. Local dev
+  // (no Azure env) still prints + writes the job summary and exits 0.
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING?.trim();
+  const container = process.env.ANALYTICS_BLOB_CONTAINER?.trim();
+  if (connectionString && container) {
+    await persist(createAzureBlobStore({ connectionString, container }), report, markdown);
+    console.log(`\nPersisted report to Azure Blob container "${container}".`);
+  } else {
+    console.log("\nAzure Blob not configured; skipping persistence (report emitted only).");
+  }
+}
+
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
+}

@@ -42,8 +42,19 @@ resource "azurerm_storage_container" "state" {
   container_access_type = "private"
 }
 
+# Weekly traffic report: raw Cloudflare JSON, rendered markdown reports, and the
+# rolling traffic-log.md (see scripts/analytics-report.ts). Private — read via
+# the connection string, same as the state container.
+resource "azurerm_storage_container" "analytics" {
+  name                  = var.analytics_container_name
+  storage_account_id    = azurerm_storage_account.this.id
+  container_access_type = "private"
+}
+
 # Only meaningful when versioning is on: expire noncurrent versions so old
-# copies of the growing state tarball don't pile up storage cost.
+# copies of the growing state tarball don't pile up storage cost. Analytics
+# blobs (raw JSON, reports, rolling log) are kept indefinitely — they're small
+# and the whole point is a durable historical record.
 resource "azurerm_storage_management_policy" "this" {
   count              = var.enable_versioning ? 1 : 0
   storage_account_id = azurerm_storage_account.this.id

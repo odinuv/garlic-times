@@ -42,6 +42,22 @@ variable "container_name" {
   }
 }
 
+variable "analytics_container_name" {
+  type        = string
+  description = "Blob container that holds the weekly traffic analytics (raw JSON + rendered markdown reports + rolling traffic-log.md). Wire this into the ANALYTICS_BLOB_CONTAINER GitHub variable."
+  default     = "garlic-times-analytics"
+
+  # Same rules as container_name: RE2 (no lookahead), so "no consecutive
+  # hyphens" is a separate negative check.
+  validation {
+    condition = (
+      can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.analytics_container_name))
+      && !can(regex("--", var.analytics_container_name))
+    )
+    error_message = "analytics_container_name must be 3-63 chars, lowercase letters/digits/hyphens, no leading/trailing or consecutive hyphens."
+  }
+}
+
 variable "enable_versioning" {
   type        = bool
   description = "Enable blob versioning for durability (rollback of a corrupt state upload). Adds storage cost for retained versions; paired with a lifecycle rule that expires old versions."

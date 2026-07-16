@@ -9,6 +9,11 @@ output "container_name" {
   value       = azurerm_storage_container.state.name
 }
 
+output "analytics_container_name" {
+  description = "Analytics blob container name. Wire into the ANALYTICS_BLOB_CONTAINER GitHub variable (consumed by scripts/analytics-report.ts)."
+  value       = azurerm_storage_container.analytics.name
+}
+
 output "storage_account_name" {
   description = "Created storage account name."
   value       = azurerm_storage_account.this.name
