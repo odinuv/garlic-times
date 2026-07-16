@@ -112,12 +112,17 @@ export function ArticleBlock({
       </div>
       {/* Engagement actions get their own right-aligned row after the body, not
           floated into the prose — so they never crowd the ">>" source link or
-          drop into the column gutter. Both are matching letter-spaced text
-          labels for a consistent newspaper look (no clip-art thumb next to a
-          caps label). */}
-      <div className="mt-1 flex justify-end gap-4 text-[10px] font-bold uppercase tracking-[0.18em]">
+          drop into the column gutter. Both are matching 32px clip-art glyphs so
+          the pair reads as one consistent row. The anchors carry the labels, so
+          the icons themselves are decorative (empty alt). */}
+      <div className="mt-1 flex items-center justify-end gap-3">
         <a href={`/${date}/${number}/`} aria-label="Like this article" className="no-underline">
-          Like
+          <img
+            src="/static/thumbs-up.png"
+            alt=""
+            loading="lazy"
+            className="inline-block h-5 w-5 mix-blend-multiply"
+          />
         </a>
         {/* One-click share. Falls back to an X compose link with no JS; the
             edition page's inline script upgrades it to the native share sheet. */}
@@ -131,7 +136,12 @@ export function ArticleBlock({
           aria-label="Share this article"
           className="js-share no-underline"
         >
-          Share
+          <img
+            src="/static/share-32.png"
+            alt=""
+            loading="lazy"
+            className="inline-block h-5 w-5 mix-blend-multiply"
+          />
         </a>
       </div>
     </article>

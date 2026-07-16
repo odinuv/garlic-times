@@ -65,8 +65,8 @@ test("each article has a like link to /<date>/<n>/", () => {
   for (let n = 1; n <= 5; n++) {
     expect(html).toContain(`href="/2026-06-27/${n}/"`);
   }
-  // Text label, not a clip-art thumb, so Like and Share read as one consistent row.
-  expect(html).toContain(">Like</a>");
+  // Clip-art glyph, matching the share icon so the pair reads as one row.
+  expect(html).toContain('src="/static/thumbs-up.png"');
   expect(html).toContain('aria-label="Like this article"');
   // one like link per article
   expect((html.match(/aria-label="Like this article"/g) || []).length).toBe(5);
@@ -79,6 +79,8 @@ test("each article has a one-click share affordance", () => {
   // one share control per article (5)
   expect((html.match(/aria-label="Share this article"/g) || []).length).toBe(5);
   expect((html.match(/class="js-share/g) || []).length).toBe(5);
+  // clip-art share glyph, matching the like icon
+  expect(html).toContain('src="/static/share-32.png"');
   // no-JS fallback: X/Twitter compose link carrying an absolute deep URL
   expect(html).toContain("https://twitter.com/intent/tweet?text=");
   expect(html).toContain(
