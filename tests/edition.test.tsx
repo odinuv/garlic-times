@@ -58,14 +58,15 @@ test("each article has a numbered anchor id", () => {
   }
 });
 
-test("each article has a thumbs-up like link to /<date>/<n>/", () => {
+test("each article has a like link to /<date>/<n>/", () => {
   const html = renderToStaticMarkup(
     <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
   );
   for (let n = 1; n <= 5; n++) {
     expect(html).toContain(`href="/2026-06-27/${n}/"`);
   }
-  expect(html).toContain('src="/static/thumbs-up.png"');
+  // Text label, not a clip-art thumb, so Like and Share read as one consistent row.
+  expect(html).toContain(">Like</a>");
   expect(html).toContain('aria-label="Like this article"');
   // one like link per article
   expect((html.match(/aria-label="Like this article"/g) || []).length).toBe(5);
@@ -85,6 +86,10 @@ test("each article has a one-click share affordance", () => {
   );
   // data hooks the enhancement script reads to open the native share sheet
   expect(html).toContain('data-share-url="https://www.thegarlictimes.com/2026-06-27/#article-1"');
+  // data-share-text carries the publication name only — the headline is already
+  // data-share-title, so native share sheets don't render the title twice.
+  expect(html).toContain('data-share-title="Cabinet talks resume"');
+  expect(html).toContain('data-share-text="The Garlic Times"');
 });
 
 test("edition page ships the share-enhancement script", () => {

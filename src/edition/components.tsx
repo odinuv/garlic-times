@@ -44,12 +44,17 @@ export function ArticleBlock({
   // Deep link to this article on its edition page. Absolute so it survives being
   // shared out of context (native share sheet / X compose window).
   const shareUrl = absoluteUrl(`/${date}/#article-${number}`);
-  const shareText = `${article.title} — The Garlic Times`;
+  // Native share sheets render title and text as separate lines, so the text
+  // must NOT repeat the headline (that's already data-share-title) — it carries
+  // the publication name instead. The X compose fallback has no title field, so
+  // its tweet text keeps the headline.
+  const shareTagline = "The Garlic Times";
+  const tweetText = `${article.title} — ${shareTagline}`;
   // No-JS fallback: a plain X/Twitter compose link (one click, works everywhere).
   // Progressively upgraded to the native share sheet by the inline script on the
   // edition page when navigator.share is available.
   const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    shareText,
+    tweetText,
   )}&url=${encodeURIComponent(shareUrl)}`;
   return (
     <article id={`article-${number}`} className="mb-2">
@@ -101,42 +106,33 @@ export function ArticleBlock({
                   </a>
                 </>
               )}
-              {/* "Like" glyph floated to the right of the last line and nudged into
-                  the column gutter, so it keeps to one line and never overlaps text
-                  that runs to the edge. */}
-              {isLast && (
-                <a
-                  href={`/${date}/${number}/`}
-                  aria-label="Like this article"
-                  className="float-right ml-2 -mr-1 no-underline"
-                >
-                  <img
-                    src="/static/thumbs-up.png"
-                    alt="Thumbs up"
-                    loading="lazy"
-                    className="inline-block h-5 w-auto align-text-bottom mix-blend-multiply"
-                  />
-                </a>
-              )}
-              {/* One-click share. Falls back to an X compose link with no JS; the
-                  edition page's inline script upgrades it to the native share sheet. */}
-              {isLast && (
-                <a
-                  href={xShareUrl}
-                  data-share-url={shareUrl}
-                  data-share-title={article.title}
-                  data-share-text={shareText}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Share this article"
-                  className="js-share float-right ml-2 align-text-bottom text-[10px] font-bold uppercase tracking-[0.18em] no-underline"
-                >
-                  Share
-                </a>
-              )}
             </p>
           );
         })}
+      </div>
+      {/* Engagement actions get their own right-aligned row after the body, not
+          floated into the prose — so they never crowd the ">>" source link or
+          drop into the column gutter. Both are matching letter-spaced text
+          labels for a consistent newspaper look (no clip-art thumb next to a
+          caps label). */}
+      <div className="mt-1 flex justify-end gap-4 text-[10px] font-bold uppercase tracking-[0.18em]">
+        <a href={`/${date}/${number}/`} aria-label="Like this article" className="no-underline">
+          Like
+        </a>
+        {/* One-click share. Falls back to an X compose link with no JS; the
+            edition page's inline script upgrades it to the native share sheet. */}
+        <a
+          href={xShareUrl}
+          data-share-url={shareUrl}
+          data-share-title={article.title}
+          data-share-text={shareTagline}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Share this article"
+          className="js-share no-underline"
+        >
+          Share
+        </a>
       </div>
     </article>
   );
