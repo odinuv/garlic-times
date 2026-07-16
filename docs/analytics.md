@@ -50,14 +50,32 @@ uniques, top pages, and countries are already available from zone analytics.
 
 ## Where the weekly numbers live (repeatable)
 
-- **`docs/traffic-log.md`** — running log, newest week on top. Written by the
-  **Weekly traffic report** workflow (`.github/workflows/analytics-report.yml`),
-  which runs every Monday 07:00 UTC and on demand
-  (`gh workflow run "Weekly traffic report" --repo odinuv/garlic-times`).
+The **Weekly traffic report** workflow (`.github/workflows/analytics-report.yml`)
+runs every Monday 07:00 UTC and on demand
+(`gh workflow run "Weekly traffic report" --repo odinuv/garlic-times`). It no
+longer commits anything to the repo — the numbers live in three places:
+
+- **Analytics Azure Blob container** (`ANALYTICS_BLOB_CONTAINER`, default
+  `garlic-times-analytics`, in the same storage account as the pipeline state).
+  Per run, keyed by the look-back window's end date:
+  - `raw/<YYYY-MM-DD>.json` — the raw structured data pulled from Cloudflare.
+  - `reports/<YYYY-MM-DD>.md` — the rendered markdown report.
+  - `traffic-log.md` — the rolling, newest-first log (replaces the old git file).
 - **Job summary** — the same report renders in each workflow run's summary.
 - **Cloudflare dashboard** — Web Analytics view, once the beacon is live.
 
-Run the report by hand:
+Read the log or a single run from the blob container (needs the connection
+string; the [`az`](https://learn.microsoft.com/cli/azure/) CLI):
+
+```bash
+az storage blob download --container-name garlic-times-analytics --name traffic-log.md \
+  --file traffic-log.md --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
+# per-run: raw/<YYYY-MM-DD>.json  and  reports/<YYYY-MM-DD>.md
+```
+
+Run the report by hand (prints + writes the job summary; also persists to the
+blob container when `AZURE_STORAGE_CONNECTION_STRING` + `ANALYTICS_BLOB_CONTAINER`
+are set — otherwise persistence is skipped and it just prints):
 
 ```bash
 CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… bun run scripts/analytics-report.ts
@@ -70,3 +88,7 @@ The weekly report uses the existing `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT
 CI secrets. It needs **Zone → Analytics: Read** (and, for referrers via RUM,
 **Account → Account Analytics: Read**). If a query returns a permissions error,
 grant those scopes to the token in the Cloudflare dashboard.
+
+If the token can see **no zones at all** (e.g. it's still scoped for Pages
+deploys only), the report **fails the run** (non-zero exit) rather than
+persisting an empty placeholder — grant the scope above to fix it.

@@ -43,6 +43,10 @@ content/img/????-??-??/
 # Daily market snapshot — restored from Azure Blob, not committed
 content/market.json
 
+# Weekly traffic report — persisted to the analytics Azure Blob container, not
+# committed. A local run must never re-commit this machine-generated log.
+docs/traffic-log.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
