@@ -25,6 +25,8 @@
   --rule: oklch(0.15 0 0);
   --muted: oklch(0.92 0.005 90);
   --muted-foreground: oklch(0.35 0 0);
+  /* Aged-paper wash for a deep-linked (#article-N) story. */
+  --highlight: oklch(0.9 0.05 85);
 }
 
 @layer base {
@@ -41,5 +43,21 @@
   p {
     text-align: justify;
     hyphens: auto;
+  }
+  /* When an article is deep-linked — via a share link, the per-article redirect
+     page, or a manual #article-N hash — wash it in a soft aged-paper highlight so
+     the reader lands on the right story. Background + a matching no-blur box-shadow
+     spread give the wash a little breathing room beyond the text box; both are
+     paint-only, so nothing reflows in the multi-column layout. */
+  article[id]:target {
+    background-color: var(--highlight);
+    box-shadow: 0 0 0 6px var(--highlight);
+    animation: article-target-in 700ms ease-out;
+  }
+  @keyframes article-target-in {
+    from {
+      background-color: transparent;
+      box-shadow: 0 0 0 6px transparent;
+    }
   }
 }
