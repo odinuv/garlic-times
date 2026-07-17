@@ -3,9 +3,34 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadEditions, neighbours, writePages, renderRedirect } from "../scripts/generate";
+import {
+  loadEditions,
+  neighbours,
+  writePages,
+  renderRedirect,
+  editionSocial,
+} from "../scripts/generate";
+import { validEdition } from "./fixtures/valid-edition";
 
 const FIX = join(import.meta.dir, "fixtures", "content");
+
+test("editionSocial uses the first article photo as a large-image card", () => {
+  const social = editionSocial(validEdition);
+  expect(social.canonicalUrl).toBe("https://www.thegarlictimes.com/2026-06-27/");
+  expect(social.image).toBe("https://www.thegarlictimes.com/img/main.jpg");
+  expect(social.imageAlt).toBe("Ministers leaving");
+  expect(social.twitterCard).toBe("summary_large_image");
+});
+
+test("editionSocial falls back to the masthead glyph as a summary card", () => {
+  const noPhotos = {
+    ...validEdition,
+    articles: validEdition.articles.map(({ image: _image, ...rest }) => rest),
+  };
+  const social = editionSocial(noPhotos);
+  expect(social.image).toBe("https://www.thegarlictimes.com/static/coat-of-arms.png");
+  expect(social.twitterCard).toBe("summary");
+});
 
 test("loadEditions returns editions sorted ascending by date", () => {
   const eds = loadEditions(join(FIX, "src"));
@@ -44,6 +69,24 @@ test("writePages emits per-date pages, root index, and about", async () => {
   const about = readFileSync(join(out, "about", "index.html"), "utf8");
   expect(about).toContain("About");
   expect(about).toContain('href="/styles.css"');
+});
+
+test("writePages emits Open Graph tags on edition and about pages", async () => {
+  const eds = loadEditions(join(FIX, "src"));
+  const out = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out });
+
+  const edition = readFileSync(join(out, "2026-06-27", "index.html"), "utf8");
+  expect(edition).toContain('property="og:type" content="website"');
+  expect(edition).toContain(
+    'property="og:url" content="https://www.thegarlictimes.com/2026-06-27/"',
+  );
+  expect(edition).toContain('rel="canonical" href="https://www.thegarlictimes.com/2026-06-27/"');
+  expect(edition).toContain('name="twitter:card"');
+
+  const about = readFileSync(join(out, "about", "index.html"), "utf8");
+  expect(about).toContain('property="og:url" content="https://www.thegarlictimes.com/about/"');
+  expect(about).toContain('name="twitter:card" content="summary"');
 });
 
 test("renderRedirect targets the article anchor with meta + JS", () => {

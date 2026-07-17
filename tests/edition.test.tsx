@@ -58,15 +58,45 @@ test("each article has a numbered anchor id", () => {
   }
 });
 
-test("each article has a thumbs-up like link to /<date>/<n>/", () => {
+test("each article has a like link to /<date>/<n>/", () => {
   const html = renderToStaticMarkup(
     <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
   );
   for (let n = 1; n <= 5; n++) {
     expect(html).toContain(`href="/2026-06-27/${n}/"`);
   }
+  // Clip-art glyph, matching the share icon so the pair reads as one row.
   expect(html).toContain('src="/static/thumbs-up.png"');
   expect(html).toContain('aria-label="Like this article"');
   // one like link per article
   expect((html.match(/aria-label="Like this article"/g) || []).length).toBe(5);
+});
+
+test("each article has a one-click share affordance", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  // one share control per article (5)
+  expect((html.match(/aria-label="Share this article"/g) || []).length).toBe(5);
+  expect((html.match(/class="js-share/g) || []).length).toBe(5);
+  // clip-art share glyph, matching the like icon
+  expect(html).toContain('src="/static/share-32.png"');
+  // no-JS fallback: X/Twitter compose link carrying an absolute deep URL
+  expect(html).toContain("https://twitter.com/intent/tweet?text=");
+  expect(html).toContain(
+    encodeURIComponent("https://www.thegarlictimes.com/2026-06-27/#article-1"),
+  );
+  // data hooks the enhancement script reads to open the native share sheet
+  expect(html).toContain('data-share-url="https://www.thegarlictimes.com/2026-06-27/#article-1"');
+  // data-share-text carries the publication name only — the headline is already
+  // data-share-title, so native share sheets don't render the title twice.
+  expect(html).toContain('data-share-title="Cabinet talks resume"');
+  expect(html).toContain('data-share-text="The Garlic Times"');
+});
+
+test("edition page ships the share-enhancement script", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  expect(html).toContain("navigator.share");
 });
