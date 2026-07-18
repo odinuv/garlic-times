@@ -38,11 +38,14 @@
     outlets. Despite the name, we are neither vegetarian nor vegan — we welcome collaborations with
     meat-based networks, protein syndicates, and any publication that appreciates a good sauté.
   </p>
-  <figure class="mt-6">
+  <!-- Fixed whole-pixel height so the illustration's fractional aspect ratio
+       doesn't push the rules below it off the pixel grid (object-contain keeps
+       it undistorted). -->
+  <figure class="mx-auto mt-6 h-[300px] max-w-md">
     <img
       src="/static/vegetable-news-network.png"
       alt="The Vegetable News Network"
-      class="mx-auto block w-full max-w-md mix-blend-multiply"
+      class="mx-auto block h-full w-full object-contain mix-blend-multiply"
     />
   </figure>
 
