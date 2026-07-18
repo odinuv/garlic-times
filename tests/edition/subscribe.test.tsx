@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SubscribeBox, newsletterConfigFromEnv } from "@/edition/subscribe";
+import { SubscribeBox } from "@/edition/subscribe";
+import { newsletterConfigFromEnv } from "@/edition/newsletter";
 
 test("newsletterConfigFromEnv returns null when no form action is set", () => {
   expect(newsletterConfigFromEnv({})).toBeNull();
