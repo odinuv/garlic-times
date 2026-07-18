@@ -23,7 +23,7 @@ export function SubscribedPage({ glyph }: { glyph: string }) {
       <h1 className="font-serif text-3xl font-bold leading-tight sm:text-4xl">
         Your subscription has taken root
       </h1>
-      <p className="mt-4 text-[14px] italic leading-snug">
+      <p className="mt-4 text-[15px] italic leading-snug">
         A confirmation email is heading your way. Give it a quick nod, and fresh cloves of news will
         follow.
       </p>
