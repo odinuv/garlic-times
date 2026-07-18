@@ -9,14 +9,7 @@
 // the crawlable "/<date>/#article-N" anchors (not the /<date>/<n>/ "like" stubs
 // that robots.txt disallows).
 import type { Article, Edition } from "@/edition/schema";
-
-/**
- * Canonical production origin (no trailing slash). Overridable via SITE_URL so a
- * preview/staging build advertises the right host; defaults to production so a
- * plain `bun run generate` emits a shareable, correct feed.
- */
-export const FEED_SITE_URL =
-  process.env.SITE_URL?.replace(/\/+$/, "") || "https://www.thegarlictimes.com";
+import { SITE_URL } from "@/edition/site";
 
 /** Cap on total items so the feed stays lightweight as editions accumulate. */
 export const MAX_ITEMS = 40;
@@ -88,7 +81,7 @@ function itemFor(origin: string, edition: Edition, article: Article, n: number):
 /** One item per article across all editions, newest first, capped at `max`. */
 export function feedItems(
   editions: Edition[],
-  origin: string = FEED_SITE_URL,
+  origin: string = SITE_URL,
   max: number = MAX_ITEMS,
 ): FeedItem[] {
   const sorted = [...editions].sort((a, b) => b.date.localeCompare(a.date));
@@ -102,7 +95,7 @@ export function feedItems(
 }
 
 /** Render the full RSS 2.0 document for the given editions. */
-export function buildFeed(editions: Edition[], origin: string = FEED_SITE_URL): string {
+export function buildFeed(editions: Edition[], origin: string = SITE_URL): string {
   const items = feedItems(editions, origin);
   const newest = [...editions].sort((a, b) => b.date.localeCompare(a.date))[0];
   const lastBuildDate = rfc822(newest?.date ?? "1970-01-01");
@@ -125,8 +118,8 @@ export function buildFeed(editions: Edition[], origin: string = FEED_SITE_URL): 
     `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n` +
     `  <channel>\n` +
     `    <title>The Garlic Times</title>\n` +
-    `    <link>${origin}/</link>\n` +
-    `    <atom:link href="${origin}/rss.xml" rel="self" type="application/rss+xml" />\n` +
+    `    <link>${escapeXml(`${origin}/`)}</link>\n` +
+    `    <atom:link href="${escapeXml(`${origin}/rss.xml`)}" rel="self" type="application/rss+xml" />\n` +
     `    <description>${escapeXml(CHANNEL_DESCRIPTION)}</description>\n` +
     `    <language>en</language>\n` +
     `    <lastBuildDate>${lastBuildDate}</lastBuildDate>\n` +

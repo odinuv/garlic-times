@@ -61,6 +61,7 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
         action={config.action}
         method="post"
         target="_blank"
+        rel="noopener"
         className="flex flex-col gap-2 sm:flex-row"
       >
         {config.hidden &&
@@ -82,6 +83,17 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
           Subscribe
         </button>
       </form>
+      {/* On-page consent notice. The form posts only fields[email] (plus any
+          configured hidden inputs), so this stays plain text — no required
+          MailerLite field or checkbox that the no-JS POST wouldn't submit.
+          Double opt-in is the backend record of consent. */}
+      <p className="mt-2 text-[10px] italic leading-snug text-muted-foreground">
+        By subscribing you agree to receive email editions and accept our{" "}
+        <a href="/about/" className="underline">
+          privacy note
+        </a>
+        .
+      </p>
     </aside>
   );
 }

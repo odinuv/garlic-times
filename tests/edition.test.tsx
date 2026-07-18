@@ -100,3 +100,23 @@ test("edition page ships the share-enhancement script", () => {
   );
   expect(html).toContain("navigator.share");
 });
+
+test("mounts the newsletter signup box when a config is passed", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage
+      edition={validEdition}
+      prevDate={null}
+      nextDate={null}
+      newsletter={{ action: "https://provider.example/subscribe", emailField: "fields[email]" }}
+    />,
+  );
+  expect(html).toContain('action="https://provider.example/subscribe"');
+  expect(html).toContain('aria-label="Subscribe"');
+});
+
+test("renders no signup box when the newsletter config is absent", () => {
+  const html = renderToStaticMarkup(
+    <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
+  );
+  expect(html).not.toContain('aria-label="Subscribe"');
+});

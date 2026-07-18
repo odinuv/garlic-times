@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { parseEdition, type Edition } from "@/edition/schema";
 import { buildFeed } from "@/edition/feed";
 import { EditionPage } from "@/edition/Edition";
+import { SubscribedPage } from "@/edition/Subscribed";
+import { newsletterConfigFromEnv, type NewsletterConfig } from "@/edition/subscribe";
 import { renderDocument, type SocialMeta } from "@/edition/shell";
 import { absoluteUrl } from "@/edition/site";
 
@@ -73,8 +75,9 @@ export async function writePages(opts: {
   aboutHtml: string;
   outDir: string;
   analyticsBeaconToken?: string;
+  newsletter?: NewsletterConfig | null;
 }): Promise<void> {
-  const { editions, aboutHtml, outDir, analyticsBeaconToken } = opts;
+  const { editions, aboutHtml, outDir, analyticsBeaconToken, newsletter = null } = opts;
   if (editions.length === 0) throw new Error("No editions found in content/src");
 
   editions.forEach((edition, i) => {
@@ -84,7 +87,7 @@ export async function writePages(opts: {
       description: edition.meta.description,
       faviconHref: edition.masthead.glyph,
       social: editionSocial(edition),
-      body: React.createElement(EditionPage, { edition, prevDate, nextDate }),
+      body: React.createElement(EditionPage, { edition, prevDate, nextDate, newsletter }),
       analyticsBeaconToken,
     });
     writeHtml(outDir, [edition.date], html);
@@ -114,6 +117,27 @@ export async function writePages(opts: {
     analyticsBeaconToken,
   });
   writeHtml(outDir, ["about"], aboutDoc);
+
+  // Thank-you page the newsletter provider redirects to after a successful
+  // signup (MailerLite's custom success URL points at /subscribed/). A utility
+  // page, so it's marked noindex and canonicalises to itself.
+  const subscribedGlyph = editions[editions.length - 1].masthead.glyph;
+  const subscribedDoc = renderDocument({
+    title: "Subscribed — The Garlic Times",
+    description: "Your subscription to The Garlic Times is noted.",
+    faviconHref: subscribedGlyph,
+    robots: "noindex",
+    social: {
+      canonicalUrl: absoluteUrl("/subscribed/"),
+      image: absoluteUrl(subscribedGlyph),
+      imageAlt: "The Garlic Times",
+      ogType: "website",
+      twitterCard: "summary",
+    },
+    body: React.createElement(SubscribedPage, { glyph: subscribedGlyph }),
+    analyticsBeaconToken,
+  });
+  writeHtml(outDir, ["subscribed"], subscribedDoc);
 }
 
 export function copyAssets(contentDir: string, outDir: string): void {
@@ -146,14 +170,15 @@ export async function build(opts: {
   contentDir: string;
   outDir: string;
   analyticsBeaconToken?: string;
+  newsletter?: NewsletterConfig | null;
 }): Promise<void> {
-  const { contentDir, outDir, analyticsBeaconToken } = opts;
+  const { contentDir, outDir, analyticsBeaconToken, newsletter = null } = opts;
   const editions = loadEditions(join(contentDir, "src"));
   const aboutPath = join(contentDir, "about.html");
   const aboutHtml = existsSync(aboutPath)
     ? readFileSync(aboutPath, "utf8")
     : "<section><h1>About</h1></section>";
-  await writePages({ editions, aboutHtml, outDir, analyticsBeaconToken });
+  await writePages({ editions, aboutHtml, outDir, analyticsBeaconToken, newsletter });
   // Owned-audience capture: an RSS feed of recent articles at /rss.xml so readers
   // can subscribe in any feed reader. Deterministic — derived from the editions.
   mkdirSync(outDir, { recursive: true });
@@ -165,7 +190,10 @@ export async function build(opts: {
 if (import.meta.main) {
   // Optional cookieless analytics beacon; no-op when the env var is unset.
   const analyticsBeaconToken = process.env.CF_BEACON_TOKEN?.trim() || undefined;
-  build({ contentDir: "content", outDir: "dist", analyticsBeaconToken })
+  // Owned-audience capture: newsletter signup box, gated on NEWSLETTER_FORM_ACTION.
+  // Null when unconfigured, so the box renders nothing and the build still succeeds.
+  const newsletter = newsletterConfigFromEnv();
+  build({ contentDir: "content", outDir: "dist", analyticsBeaconToken, newsletter })
     .then(() =>
       console.log(
         analyticsBeaconToken

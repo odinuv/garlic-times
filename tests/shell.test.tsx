@@ -16,6 +16,37 @@ test("produces a complete doctype document with head metadata", () => {
   expect(html).toContain("<main>hello</main>");
 });
 
+test("emits RSS autodiscovery link on every page (even without social meta)", () => {
+  const html = renderDocument({
+    title: "T",
+    description: "D",
+    faviconHref: "/static/coat-of-arms.png",
+    body: <main>hi</main>,
+  });
+  expect(html).toContain(
+    '<link rel="alternate" type="application/rss+xml" title="The Garlic Times" href="https://www.thegarlictimes.com/rss.xml"/>',
+  );
+});
+
+test("omits the robots meta by default and emits it when provided", () => {
+  const indexable = renderDocument({
+    title: "T",
+    description: "D",
+    faviconHref: "/static/coat-of-arms.png",
+    body: <main>hi</main>,
+  });
+  expect(indexable).not.toContain('name="robots"');
+
+  const noindex = renderDocument({
+    title: "T",
+    description: "D",
+    faviconHref: "/static/coat-of-arms.png",
+    body: <main>hi</main>,
+    robots: "noindex",
+  });
+  expect(noindex).toContain('<meta name="robots" content="noindex"/>');
+});
+
 test("emits no script tags when no analytics beacon token is provided", () => {
   const html = renderDocument({
     title: "T",

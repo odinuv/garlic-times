@@ -51,4 +51,38 @@ test("SubscribeBox renders a POST form with the provider action and email field"
   expect(html).toContain('type="hidden"');
   expect(html).toContain('name="ml-list"');
   expect(html).toContain("Subscribe");
+  // Hardened target=_blank, matching the share link.
+  expect(html).toContain('rel="noopener"');
+});
+
+test("SubscribeBox shows a consent line linking to /about/ when configured", () => {
+  const html = renderToStaticMarkup(
+    <SubscribeBox
+      config={{ action: "https://provider.example/subscribe", emailField: "fields[email]" }}
+    />,
+  );
+  expect(html).toContain("agree to receive email editions");
+  expect(html).toContain('href="/about/"');
+});
+
+test("SubscribeBox consent line only appears when configured", () => {
+  const html = renderToStaticMarkup(<SubscribeBox config={null} />);
+  expect(html).toBe("");
+  expect(html).not.toContain("agree to receive email editions");
+});
+
+test("SubscribeBox posts only the email field and configured hidden inputs (no extra required fields)", () => {
+  const html = renderToStaticMarkup(
+    <SubscribeBox
+      config={{
+        action: "https://provider.example/subscribe",
+        emailField: "fields[email]",
+        hidden: { "ml-list": "123" },
+      }}
+    />,
+  );
+  // Exactly two inputs: the email field and the one configured hidden field.
+  // A stray `required` input the no-JS POST couldn't satisfy would break signup.
+  expect((html.match(/<input/g) || []).length).toBe(2);
+  expect((html.match(/required/g) || []).length).toBe(1);
 });
