@@ -45,7 +45,7 @@ test("each article links to its original source with a >> marker", () => {
   expect(html).toContain('href="https://example.com/original"');
   expect(html).toContain('aria-label="Read the original article"');
   // only the one article with a sourceUrl gets a link (others omit it)
-  expect((html.match(/Read the original article/g) || []).length).toBe(1);
+  expect((html.match(/aria-label="Read the original article"/g) || []).length).toBe(1);
 });
 
 test("each article has a numbered anchor id", () => {
