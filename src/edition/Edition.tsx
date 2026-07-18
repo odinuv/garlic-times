@@ -34,10 +34,11 @@ export function EditionPage({
   // article[0], rates, article[1], advert, article[2..], recipe.
   const [lead, second, ...rest] = articles;
   // Only the lead article sits above the fold on mobile, so only its photo is a
-  // safe largest-contentful-paint candidate to eager-load at high priority. If
-  // the lead has no photo the masthead/headline is the LCP, and every photo
-  // stays lazy so nothing competes with above-the-fold paint for bandwidth.
-  const lcpImageIndex = articles[0]?.image ? 0 : -1;
+  // safe largest-contentful-paint candidate to eager-load at high priority.
+  // Every other photo stays lazy so nothing competes with above-the-fold paint
+  // for bandwidth. When the lead has no photo the masthead emblem is the LCP
+  // instead (see its fetchPriority below), so exactly one element is hinted.
+  const leadHasPhoto = !!lead?.image;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8">
@@ -61,7 +62,9 @@ export function EditionPage({
               alt="The Garlic Times emblem"
               width={120}
               height={120}
-              fetchPriority="high"
+              // High priority only when no lead photo claims the LCP hint, so
+              // exactly one element competes for early-load bandwidth.
+              fetchPriority={leadHasPhoto ? "auto" : "high"}
               decoding="async"
               className="h-10 w-10 sm:h-20 sm:w-20 md:h-24 md:w-24 object-contain shrink-0"
             />
@@ -97,32 +100,14 @@ export function EditionPage({
           only whole-unit blocks (boxes, photos, headlines) resist splitting. */}
       <section className="columns-1 md:columns-2 lg:columns-3 gap-8 [column-rule:1px_solid_var(--ink)] [&>*]:mb-6">
         {lead && (
-          <ArticleBlock
-            article={lead}
-            number={1}
-            date={edition.date}
-            priority={lcpImageIndex === 0}
-          />
+          <ArticleBlock article={lead} number={1} date={edition.date} priority={leadHasPhoto} />
         )}
         <RatesBox rates={edition.rates} />
-        {second && (
-          <ArticleBlock
-            article={second}
-            number={2}
-            date={edition.date}
-            priority={lcpImageIndex === 1}
-          />
-        )}
+        {second && <ArticleBlock article={second} number={2} date={edition.date} />}
         {/* Advertisement section temporarily hidden (data retained in the edition schema). */}
         {/* <AdvertBox advert={edition.advert} /> */}
         {rest.map((a, i) => (
-          <ArticleBlock
-            key={i}
-            article={a}
-            number={i + 3}
-            date={edition.date}
-            priority={lcpImageIndex === i + 2}
-          />
+          <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
         <RecipeBox recipe={edition.recipe} />
         {/* Owned-audience capture — the last box in the column flow, after the

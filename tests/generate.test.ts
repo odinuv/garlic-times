@@ -34,36 +34,128 @@ test("editionSocial falls back to the masthead glyph as a summary card", () => {
   expect(social.twitterCard).toBe("summary");
 });
 
-// A 24-byte PNG header advertising the given dimensions (enough for the reader).
-function pngHeader(width: number, height: number): Uint8Array {
-  const buf = new Uint8Array(24);
-  buf.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
-  const view = new DataView(buf.buffer);
-  view.setUint32(16, width);
-  view.setUint32(20, height);
-  return buf;
+// image-size itself is well tested for parsing PNG/JPEG (baseline, progressive,
+// truncated) — so these tests cover only what we add on top: the EXIF
+// orientation swap and the null fallback. Byte builders assemble just enough of
+// a real file to carry an orientation tag and dimensions.
+const u16 = (n: number): number[] => [(n >> 8) & 0xff, n & 0xff];
+const u16LE = (n: number): number[] => [n & 0xff, (n >> 8) & 0xff];
+const u32 = (n: number): number[] => [
+  (n >>> 24) & 0xff,
+  (n >>> 16) & 0xff,
+  (n >>> 8) & 0xff,
+  n & 0xff,
+];
+const u32LE = (n: number): number[] => [
+  n & 0xff,
+  (n >> 8) & 0xff,
+  (n >>> 16) & 0xff,
+  (n >>> 24) & 0xff,
+];
+
+// A valid minimal PNG: 8-byte signature + a complete IHDR chunk (used by the
+// on-disk integration test).
+function png(width: number, height: number): Uint8Array {
+  return Uint8Array.from([
+    0x89,
+    0x50,
+    0x4e,
+    0x47,
+    0x0d,
+    0x0a,
+    0x1a,
+    0x0a, // signature
+    ...u32(13),
+    0x49,
+    0x48,
+    0x44,
+    0x52, // IHDR chunk length + name
+    ...u32(width),
+    ...u32(height),
+    0x08,
+    0x06,
+    0x00,
+    0x00,
+    0x00, // bit depth, colour type, compression, filter, interlace
+    ...u32(0), // CRC (unchecked by the size reader)
+  ]);
 }
 
-test("imageDimensions reads PNG width/height from the IHDR chunk", () => {
-  expect(imageDimensions(pngHeader(800, 600))).toEqual({ width: 800, height: 600 });
-});
+// An APP1/EXIF segment carrying just the orientation tag (0x0112), little-endian.
+function app1Orientation(orientation: number): Uint8Array {
+  const body = [
+    0x45,
+    0x78,
+    0x69,
+    0x66,
+    0x00,
+    0x00, // "Exif\0\0"
+    0x49,
+    0x49,
+    0x2a,
+    0x00, // TIFF little-endian marker
+    ...u32LE(8), // IFD0 offset
+    ...u16LE(1), // one directory entry
+    ...u16LE(0x0112), // tag: orientation
+    ...u16LE(3), // type: SHORT
+    ...u32LE(1), // count
+    orientation & 0xff,
+    0x00,
+    0x00,
+    0x00, // value (SHORT in the low 2 bytes)
+    ...u32LE(0), // next-IFD offset
+  ];
+  return Uint8Array.from([0xff, 0xe1, ...u16(body.length + 2), ...body]);
+}
 
-test("imageDimensions reads JPEG width/height from the SOF0 marker", () => {
-  // FFD8 SOI, then FFC0 SOF0: length, precision, height=0x012C(300), width=0x028A(650).
-  const jpeg = new Uint8Array([
-    0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x01, 0x2c, 0x02, 0x8a, 0x00,
+// A minimal JPEG carrying an EXIF orientation segment before its SOF0 frame.
+function exifJpeg(width: number, height: number, orientation: number): Uint8Array {
+  return Uint8Array.from([
+    0xff,
+    0xd8, // SOI
+    ...app1Orientation(orientation),
+    0xff,
+    0xc0,
+    ...u16(17),
+    0x08,
+    ...u16(height),
+    ...u16(width), // SOF0 header + size
+    0x03,
+    0x01,
+    0x22,
+    0x00,
+    0x02,
+    0x11,
+    0x00,
+    0x03,
+    0x11,
+    0x00, // 3 component specs
   ]);
-  expect(imageDimensions(jpeg)).toEqual({ width: 650, height: 300 });
+}
+
+test("imageDimensions swaps width/height for EXIF-rotated (orientation 5–8) JPEGs", () => {
+  // A portrait phone photo stores a landscape frame (1200×800) plus an
+  // orientation tag; the browser paints it rotated, so the reserved box must be
+  // the transposed 800×1200 — otherwise the swap-less box reintroduces CLS.
+  for (const orientation of [5, 6, 7, 8]) {
+    expect(imageDimensions(exifJpeg(1200, 800, orientation))).toEqual({ width: 800, height: 1200 });
+  }
 });
 
-test("imageDimensions returns null for unrecognized bytes", () => {
+test("imageDimensions leaves non-rotating orientations (1–4) unswapped", () => {
+  for (const orientation of [1, 2, 3, 4]) {
+    expect(imageDimensions(exifJpeg(1200, 800, orientation))).toEqual({ width: 1200, height: 800 });
+  }
+});
+
+test("imageDimensions returns null for unreadable input", () => {
   expect(imageDimensions(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]))).toBeNull();
 });
 
 test("withImageDimensions fills dimensions from files on disk and skips missing ones", () => {
   const content = mkdtempSync(join(tmpdir(), "gt-dim-"));
   mkdirSync(join(content, "img"), { recursive: true });
-  writeFileSync(join(content, "img", "lead.png"), pngHeader(1200, 800));
+  writeFileSync(join(content, "img", "lead.png"), png(1200, 800));
 
   const edition = {
     ...validEdition,

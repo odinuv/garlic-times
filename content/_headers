@@ -1,22 +1,7 @@
-# Cloudflare Pages cache rules for The Garlic Times (see GAR-4).
-# Rules are applied top-to-bottom; for a shared header the last match wins, so
-# the catch-all comes first and the more-specific asset rules override it below.
-
-# Default (HTML pages, feeds, misc): a short cache so each new daily edition and
-# any hotfix surface quickly, while still sparing the origin repeat hits.
-/*
-  Cache-Control: public, max-age=300, must-revalidate
-
-# Stylesheet is not content-hashed and can change on a daily rebuild — cacheable
-# but revalidated within the hour.
-/styles.css
-  Cache-Control: public, max-age=3600, must-revalidate
-
-# Brand assets (logo, glyphs, thumbs-up) change rarely.
-/static/*
-  Cache-Control: public, max-age=604800
-
-# Per-edition photos live under an immutable /img/<date>/ path and never change
-# once published — cache them hard for a year.
+# Cloudflare Pages already caches everything at the edge until the next deploy and
+# revalidates browsers with Etag/304 — which is exactly right for HTML (root changes
+# daily) and the non-hashed styles.css. The only win worth adding: per-edition photos
+# live at immutable /img/<date>/ paths and never change, so let browsers skip
+# revalidation entirely.
 /img/*
   Cache-Control: public, max-age=31536000, immutable

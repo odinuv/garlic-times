@@ -152,11 +152,29 @@ test("photos render intrinsic width/height to reserve layout space (zero CLS)", 
   expect(lead).toContain('height="800"');
 });
 
-test("the masthead emblem is fetched at high priority (it is the mobile LCP)", () => {
+const emblemTag = (html: string) =>
+  html.match(/<img[^>]*alt="The Garlic Times emblem"[^>]*>/)?.[0] ?? "";
+
+test("the masthead emblem yields the high-priority hint to the lead photo", () => {
+  // validEdition's lead article carries a photo, so it — not the emblem — is the
+  // LCP candidate; the emblem must not compete for the hint.
   const html = renderToStaticMarkup(
     <EditionPage edition={validEdition} prevDate={null} nextDate={null} />,
   );
-  const emblem = html.match(/<img[^>]*alt="The Garlic Times emblem"[^>]*>/)?.[0] ?? "";
-  expect(emblem).toContain('fetchPriority="high"');
+  const emblem = emblemTag(html);
+  expect(emblem).toContain('fetchPriority="auto"');
   expect(emblem).toContain('decoding="async"');
+});
+
+test("the masthead emblem takes the high-priority hint when the lead has no photo", () => {
+  // With no lead photo the emblem is the largest above-the-fold paint, so it
+  // becomes the single high-priority element.
+  const noPhotos = {
+    ...validEdition,
+    articles: validEdition.articles.map(({ image: _image, ...rest }) => rest),
+  };
+  const html = renderToStaticMarkup(
+    <EditionPage edition={noPhotos} prevDate={null} nextDate={null} />,
+  );
+  expect(emblemTag(html)).toContain('fetchPriority="high"');
 });
