@@ -1,5 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { absoluteUrl } from "@/edition/site";
 
 export interface SocialMeta {
   /** Absolute canonical URL of this page (also used as og:url). */
@@ -23,11 +24,18 @@ export function renderDocument({
   body,
   analyticsBeaconToken,
   social,
+  robots,
 }: {
   title: string;
   description: string;
   faviconHref: string;
   body: React.ReactNode;
+  /**
+   * Value for a `<meta name="robots">` tag. Set to "noindex" on utility pages
+   * (e.g. the /subscribed/ thank-you page) that shouldn't appear in search
+   * results. Omit on content pages so they stay indexable by default.
+   */
+  robots?: string;
   /**
    * Cloudflare Web Analytics beacon token. When set, a cookieless,
    * privacy-friendly analytics beacon is emitted on every page. When empty or
@@ -44,6 +52,15 @@ export function renderDocument({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
         <meta name="description" content={description} />
+        {robots && <meta name="robots" content={robots} />}
+        {/* RSS autodiscovery — feed readers pick this up from any page. Absolute
+            so it resolves when the page is fetched out of context. */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={SITE_NAME}
+          href={absoluteUrl("/rss.xml")}
+        />
         {social && <link rel="canonical" href={social.canonicalUrl} />}
         {/* Open Graph — Facebook, LinkedIn, Slack, iMessage, WhatsApp, Discord… */}
         {social && (

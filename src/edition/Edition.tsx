@@ -2,6 +2,7 @@ import React from "react";
 import type { Edition } from "@/edition/schema";
 // AdvertBox import removed while the advertisement section is commented out below (re-add to restore).
 import { ArticleBlock, RatesBox, RecipeBox, Rule } from "@/edition/components";
+import { SubscribeBox, type NewsletterConfig } from "@/edition/subscribe";
 
 // Progressive enhancement: when the browser supports the Web Share API, a click
 // on any ".js-share" link opens the native OS share sheet instead of following
@@ -20,10 +21,13 @@ export function EditionPage({
   edition,
   prevDate,
   nextDate,
+  newsletter = null,
 }: {
   edition: Edition;
   prevDate: string | null;
   nextDate: string | null;
+  /** Newsletter signup config; when null the SubscribeBox renders nothing. */
+  newsletter?: NewsletterConfig | null;
 }) {
   const { masthead, articles } = edition;
   // Column flow mirrors the original front page:
@@ -94,6 +98,9 @@ export function EditionPage({
           <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
         <RecipeBox recipe={edition.recipe} />
+        {/* Owned-audience capture — the last box in the column flow, after the
+            recipe. Renders nothing until the newsletter provider is configured. */}
+        <SubscribeBox config={newsletter} />
       </section>
 
       <Rule thick />

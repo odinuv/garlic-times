@@ -89,6 +89,56 @@ test("writePages emits Open Graph tags on edition and about pages", async () => 
   expect(about).toContain('name="twitter:card" content="summary"');
 });
 
+test("writePages emits the /subscribed/ thank-you page (noindex, self-canonical)", async () => {
+  const eds = loadEditions(join(FIX, "src"));
+  const out = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out });
+
+  const subscribed = readFileSync(join(out, "subscribed", "index.html"), "utf8");
+  expect(subscribed).toContain("Your subscription has taken root");
+  expect(subscribed).toContain('<meta name="robots" content="noindex"/>');
+  expect(subscribed).toContain('rel="canonical" href="https://www.thegarlictimes.com/subscribed/"');
+  expect(subscribed).toContain("<title>Subscribed — The Garlic Times</title>");
+});
+
+test("every page head carries the RSS autodiscovery link", async () => {
+  const eds = loadEditions(join(FIX, "src"));
+  const out = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out });
+
+  const autodiscovery =
+    '<link rel="alternate" type="application/rss+xml" title="The Garlic Times" href="https://www.thegarlictimes.com/rss.xml"/>';
+  for (const path of [
+    ["index.html"],
+    ["2026-06-27", "index.html"],
+    ["about", "index.html"],
+    ["subscribed", "index.html"],
+  ]) {
+    expect(readFileSync(join(out, ...path), "utf8")).toContain(autodiscovery);
+  }
+});
+
+test("writePages mounts the signup box on editions when a newsletter config is given", async () => {
+  const eds = loadEditions(join(FIX, "src"));
+  const out = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({
+    editions: eds,
+    aboutHtml: "<section>About</section>",
+    outDir: out,
+    newsletter: { action: "https://provider.example/subscribe", emailField: "fields[email]" },
+  });
+
+  const edition = readFileSync(join(out, "2026-06-27", "index.html"), "utf8");
+  expect(edition).toContain('action="https://provider.example/subscribe"');
+  expect(edition).toContain('aria-label="Subscribe"');
+
+  // Unconfigured (default) => no box, build still succeeds.
+  const out2 = mkdtempSync(join(tmpdir(), "gt-"));
+  await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out2 });
+  const plain = readFileSync(join(out2, "2026-06-27", "index.html"), "utf8");
+  expect(plain).not.toContain('aria-label="Subscribe"');
+});
+
 test("renderRedirect targets the article anchor with meta + JS", () => {
   const html = renderRedirect("2026-06-27", 3);
   expect(html).toContain('content="0;url=/2026-06-27/#article-3"');

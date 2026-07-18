@@ -66,6 +66,11 @@ jobs:
         env:
           # Cookieless Cloudflare Web Analytics beacon; no-op until the secret is set.
           CF_BEACON_TOKEN: ${{ secrets.CF_BEACON_TOKEN }}
+          # Newsletter signup form (MailerLite). Public form identifiers, so these
+          # are repo *variables*, not secrets; unset => the signup box is omitted.
+          NEWSLETTER_FORM_ACTION: ${{ vars.NEWSLETTER_FORM_ACTION }}
+          NEWSLETTER_EMAIL_FIELD: ${{ vars.NEWSLETTER_EMAIL_FIELD }}
+          NEWSLETTER_HIDDEN_FIELDS: ${{ vars.NEWSLETTER_HIDDEN_FIELDS }}
 
       - name: Deploy to Cloudflare Pages
         run: bunx wrangler@3 pages deploy dist --project-name "$CF_PAGES_PROJECT" --branch main
