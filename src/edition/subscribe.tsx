@@ -9,6 +9,23 @@
 import React from "react";
 import { Rule } from "@/edition/components";
 
+// Progressive enhancement: the no-JS POST lands the reader on the provider's raw
+// `{"success":true}` JSON, because MailerLite's own redirect-to-thank-you-page is
+// done by their JavaScript (which we deliberately don't load). When JS is
+// available, intercept the submit, fire the same POST in the background, and send
+// the reader to our own /subscribed/ page instead. One tiny delegated listener —
+// no third-party script, no tracking — mirroring the share-sheet enhancement.
+// Without JS the plain POST still subscribes (the double opt-in email is the
+// record of consent); only the thank-you redirect is skipped. The redirect is
+// optimistic: the response is cross-origin/opaque, so we can't read success and
+// send the reader onward regardless — /subscribed/ tells them to check their inbox.
+const SUBSCRIBE_SCRIPT =
+  'document.addEventListener("submit",function(e){' +
+  'var f=e.target;if(!f||!f.classList||!f.classList.contains("js-subscribe"))return;' +
+  "e.preventDefault();" +
+  'fetch(f.action,{method:"POST",body:new FormData(f),mode:"no-cors"})' +
+  '.then(g,g);function g(){location.href="/subscribed/";}});';
+
 export interface NewsletterConfig {
   /** Provider form endpoint the browser POSTs to (e.g. a MailerLite/Buttondown embed URL). */
   action: string;
@@ -62,7 +79,7 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
         method="post"
         target="_blank"
         rel="noopener"
-        className="flex flex-col gap-2 sm:flex-row"
+        className="js-subscribe flex flex-col gap-2 sm:flex-row"
       >
         {config.hidden &&
           Object.entries(config.hidden).map(([name, value]) => (
@@ -94,6 +111,7 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
         </a>
         .
       </p>
+      <script dangerouslySetInnerHTML={{ __html: SUBSCRIBE_SCRIPT }} />
     </aside>
   );
 }

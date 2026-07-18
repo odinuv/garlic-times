@@ -65,6 +65,18 @@ test("SubscribeBox shows a consent line linking to the privacy note when configu
   expect(html).toContain('href="/about/#privacy"');
 });
 
+test("SubscribeBox ships a JS redirect enhancement to the thank-you page", () => {
+  const html = renderToStaticMarkup(
+    <SubscribeBox
+      config={{ action: "https://provider.example/subscribe", emailField: "fields[email]" }}
+    />,
+  );
+  // The form is tagged for the delegated submit listener, and the script sends a
+  // successful signup to our own /subscribed/ page (no-JS falls back to the POST).
+  expect(html).toContain('class="js-subscribe');
+  expect(html).toContain('location.href="/subscribed/"');
+});
+
 test("SubscribeBox consent line only appears when configured", () => {
   const html = renderToStaticMarkup(<SubscribeBox config={null} />);
   expect(html).toBe("");
