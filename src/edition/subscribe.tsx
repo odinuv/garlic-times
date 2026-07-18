@@ -72,7 +72,7 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
       <Rule />
       <h3 className="font-serif text-xl font-bold leading-tight">The Garlic Times, delivered</h3>
       <p className="mb-3 text-[12px] italic leading-snug">
-        Each new edition, free, by electronic mail.
+        Each Saturday&rsquo;s edition, free, by electronic mail.
       </p>
       <form
         action={config.action}
