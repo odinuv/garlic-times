@@ -18,17 +18,17 @@ export function SubscribedPage({ glyph }: { glyph: string }) {
         height={96}
         className="mx-auto h-20 w-20 object-contain mix-blend-multiply"
       />
-      <p className="mt-6 text-[11px] uppercase tracking-[0.25em]">A Digest By Post</p>
+      <p className="mt-6 text-[11px] uppercase tracking-[0.25em] leading-4">A Digest By Post</p>
       <Rule />
       <h1 className="font-serif text-3xl font-bold leading-tight sm:text-4xl">
         Your subscription has taken root
       </h1>
-      <p className="mt-4 text-[15px] italic leading-snug">
+      <p className="mt-4 text-[15px] italic leading-6">
         A confirmation email is heading your way. Give it a quick nod, and fresh cloves of news will
         follow.
       </p>
       <Rule />
-      <p className="text-[11px] uppercase tracking-[0.25em]">
+      <p className="text-[11px] uppercase tracking-[0.25em] leading-4">
         <a href="/" className="no-underline">
           ‹ Return to the front page
         </a>
