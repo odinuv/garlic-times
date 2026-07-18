@@ -5,6 +5,11 @@ export const imageSchema = z.object({
   src: z.string().min(1),
   alt: z.string(),
   caption: z.string().optional(),
+  // Intrinsic pixel dimensions, filled in at build time from the file on disk.
+  // Emitting width/height lets the browser reserve the image's box before it
+  // loads, so lazy photos no longer shove the column downward (zero CLS).
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
 });
 
 export const articleSchema = z.object({

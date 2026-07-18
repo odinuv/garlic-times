@@ -34,10 +34,15 @@ export function ArticleBlock({
   article,
   number,
   date,
+  priority = false,
 }: {
   article: Article;
   number: number;
   date: string;
+  /** The largest-contentful-paint candidate: eager-load it at high priority
+   *  instead of deferring, so it paints as early as possible. Exactly one
+   *  article per edition should receive this. */
+  priority?: boolean;
 }) {
   const colsClass =
     article.columns === 2 ? "sm:columns-2 sm:gap-5 [column-rule:1px_solid_var(--ink)]" : "";
@@ -74,7 +79,11 @@ export function ArticleBlock({
           <img
             src={article.image.src}
             alt={article.image.alt}
-            loading="lazy"
+            width={article.image.width}
+            height={article.image.height}
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : undefined}
+            decoding="async"
             className="w-full mix-blend-multiply"
           />
           {article.image.caption && (

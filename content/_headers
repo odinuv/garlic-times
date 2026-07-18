@@ -1,0 +1,7 @@
+# Cloudflare Pages already caches everything at the edge until the next deploy and
+# revalidates browsers with Etag/304 — which is exactly right for HTML (root changes
+# daily) and the non-hashed styles.css. The only win worth adding: per-edition photos
+# live at immutable /img/<date>/ paths and never change, so let browsers skip
+# revalidation entirely.
+/img/*
+  Cache-Control: public, max-age=31536000, immutable

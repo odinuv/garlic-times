@@ -2,6 +2,7 @@
 import React from "react";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync } from "node:fs";
 import { join } from "node:path";
+import { imageSize } from "image-size";
 import { parseEdition, type Edition } from "@/edition/schema";
 import { buildFeed } from "@/edition/feed";
 import { EditionPage } from "@/edition/Edition";
@@ -42,6 +43,51 @@ export function loadEditions(srcDir: string): Edition[] {
     parseEdition(JSON.parse(readFileSync(join(srcDir, f), "utf8")), f),
   );
   return editions.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Read a raster image's *displayed* pixel dimensions from its header bytes via
+ * `image-size` (pure JS, no decode). PNG (masthead/glyphs) and JPEG (article
+ * photos) are the formats the site ships. For EXIF-rotated JPEGs (orientation
+ * 5–8 rotate the frame a quarter turn) the stored width/height are transposed
+ * relative to what the browser paints, so we swap them back — otherwise a
+ * portrait phone photo would reserve a landscape box and reintroduce the layout
+ * shift this is meant to remove. Returns null for anything unreadable or
+ * unsupported so callers can fall back to omitting the attributes.
+ */
+export function imageDimensions(buf: Uint8Array): { width: number; height: number } | null {
+  try {
+    const { width, height, orientation } = imageSize(buf);
+    if (!width || !height) return null;
+    return orientation && orientation >= 5 && orientation <= 8
+      ? { width: height, height: width }
+      : { width, height };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fill in each article image's intrinsic width/height from the file on disk so
+ * the rendered <img> reserves its box before loading — eliminating the layout
+ * shift (CLS) that lazy photos otherwise cause. Pure: returns new editions and
+ * silently leaves dimensions unset for any image whose file is missing.
+ */
+export function withImageDimensions(editions: Edition[], contentDir: string): Edition[] {
+  return editions.map((edition) => ({
+    ...edition,
+    articles: edition.articles.map((article) => {
+      if (!article.image || article.image.width) return article;
+      const file = join(contentDir, article.image.src.replace(/^\/+/, ""));
+      if (!existsSync(file)) return article;
+      try {
+        const dims = imageDimensions(readFileSync(file));
+        return dims ? { ...article, image: { ...article.image, ...dims } } : article;
+      } catch {
+        return article;
+      }
+    }),
+  }));
 }
 
 export function neighbours(
@@ -145,8 +191,9 @@ export function copyAssets(contentDir: string, outDir: string): void {
     const from = join(contentDir, sub);
     if (existsSync(from)) cpSync(from, join(outDir, sub), { recursive: true });
   }
-  // Root-level files served from the site root (e.g. /robots.txt), not under /static/.
-  for (const file of ["robots.txt"]) {
+  // Root-level files served from the site root (e.g. /robots.txt, /_headers), not
+  // under /static/. `_headers` sets Cloudflare Pages cache rules (see content/_headers).
+  for (const file of ["robots.txt", "_headers"]) {
     const from = join(contentDir, file);
     if (existsSync(from)) cpSync(from, join(outDir, file));
   }
@@ -173,7 +220,7 @@ export async function build(opts: {
   newsletter?: NewsletterConfig | null;
 }): Promise<void> {
   const { contentDir, outDir, analyticsBeaconToken, newsletter = null } = opts;
-  const editions = loadEditions(join(contentDir, "src"));
+  const editions = withImageDimensions(loadEditions(join(contentDir, "src")), contentDir);
   const aboutPath = join(contentDir, "about.html");
   const aboutHtml = existsSync(aboutPath)
     ? readFileSync(aboutPath, "utf8")

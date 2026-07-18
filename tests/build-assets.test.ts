@@ -30,6 +30,17 @@ test("copyAssets places robots.txt at the output root", () => {
   expect(existsSync(join(out, "static", "robots.txt"))).toBe(false);
 });
 
+test("copyAssets places the Cloudflare _headers file at the output root", () => {
+  const content = mkdtempSync(join(tmpdir(), "gt-content-"));
+  const out = mkdtempSync(join(tmpdir(), "gt-out-"));
+  writeFileSync(join(content, "_headers"), "/img/*\n  Cache-Control: public, max-age=31536000\n");
+
+  copyAssets(content, out);
+
+  expect(existsSync(join(out, "_headers"))).toBe(true);
+  expect(existsSync(join(out, "static", "_headers"))).toBe(false);
+});
+
 test("copyAssets tolerates a missing source directory", () => {
   const content = mkdtempSync(join(tmpdir(), "gt-content-"));
   const out = mkdtempSync(join(tmpdir(), "gt-out-"));
