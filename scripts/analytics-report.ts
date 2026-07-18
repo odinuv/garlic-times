@@ -60,29 +60,42 @@ const untilDateTime = now.toISOString();
 
 type Zone = { id: string; name: string };
 
-async function cfGet(path: string): Promise<any> {
+// Loose shapes for the two Cloudflare surfaces we touch. Only the fields this
+// script reads are modelled — the APIs return much more.
+type CfRestResponse = {
+  success?: boolean;
+  result?: unknown;
+  errors?: { code?: number; message?: string }[];
+};
+type AdaptiveGroup = { count?: number; dimensions?: Record<string, string> };
+type Requests1dGroup = {
+  sum?: { pageViews?: number; requests?: number };
+  uniq?: { uniques?: number };
+};
+
+async function cfGet(path: string): Promise<CfRestResponse> {
   const res = await fetch(`${API}${path}`, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
-  const json = await res.json();
+  const json = (await res.json()) as CfRestResponse;
   if (!res.ok || json.success === false) {
-    const msg = json.errors?.map((e: any) => `${e.code} ${e.message}`).join("; ") || res.statusText;
+    const msg = json.errors?.map((e) => `${e.code} ${e.message}`).join("; ") || res.statusText;
     throw new Error(`Cloudflare REST ${path} failed: ${msg}`);
   }
   return json;
 }
 
-async function gql(query: string, variables: Record<string, unknown>): Promise<any> {
+async function gql<T = unknown>(query: string, variables: Record<string, unknown>): Promise<T> {
   const res = await fetch(GQL, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
-  const json = await res.json();
+  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
   if (json.errors?.length) {
-    throw new Error(`GraphQL error: ${json.errors.map((e: any) => e.message).join("; ")}`);
+    throw new Error(`GraphQL error: ${json.errors.map((e) => e.message).join("; ")}`);
   }
-  return json.data;
+  return json.data as T;
 }
 
 async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
@@ -92,14 +105,18 @@ async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
   try {
     const q = accountId ? `?account.id=${accountId}&per_page=50` : `?per_page=50`;
     const json = await cfGet(`/zones${q}`);
-    all = (json.result ?? []).map((z: any) => ({ id: z.id, name: z.name }));
+    const result = (json.result ?? []) as { id: string; name: string }[];
+    all = result.map((z) => ({ id: z.id, name: z.name }));
   } catch {
     // fall through to GraphQL
   }
   if (!all.length) {
     try {
-      const data = await gql(`query { viewer { zones { zoneTag } } }`, {});
-      all = (data?.viewer?.zones ?? []).map((z: any) => ({ id: z.zoneTag, name: z.zoneTag }));
+      const data = await gql<{ viewer?: { zones?: { zoneTag: string }[] } }>(
+        `query { viewer { zones { zoneTag } } }`,
+        {},
+      );
+      all = (data?.viewer?.zones ?? []).map((z) => ({ id: z.zoneTag, name: z.zoneTag }));
     } catch {
       // token cannot see any zones
     }
@@ -109,7 +126,9 @@ async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
 }
 
 async function zoneTotals(zoneId: string) {
-  const data = await gql(
+  const data = await gql<{
+    viewer?: { zones?: { httpRequests1dGroups?: Requests1dGroup[] }[] };
+  }>(
     `query ($zoneTag: String!, $since: String!, $until: String!) {
       viewer { zones(filter: { zoneTag: $zoneTag }) {
         httpRequests1dGroups(limit: 100, filter: { date_geq: $since, date_leq: $until }) {
@@ -133,7 +152,9 @@ async function zoneTotals(zoneId: string) {
 }
 
 async function topPages(zoneId: string) {
-  const data = await gql(
+  const data = await gql<{
+    viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
+  }>(
     `query ($zoneTag: String!, $since: String!, $until: String!) {
       viewer { zones(filter: { zoneTag: $zoneTag }) {
         httpRequestsAdaptiveGroups(
@@ -150,13 +171,15 @@ async function topPages(zoneId: string) {
   );
   const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
   return groups
-    .map((g: any) => ({ path: g.dimensions?.clientRequestPath ?? "?", count: g.count ?? 0 }))
-    .filter((r: any) => !/\.(css|js|png|jpe?g|svg|ico|webp|woff2?|txt|xml)$/i.test(r.path))
+    .map((g) => ({ path: g.dimensions?.clientRequestPath ?? "?", count: g.count ?? 0 }))
+    .filter((r) => !/\.(css|js|png|jpe?g|svg|ico|webp|woff2?|txt|xml)$/i.test(r.path))
     .slice(0, 10);
 }
 
 async function topCountries(zoneId: string) {
-  const data = await gql(
+  const data = await gql<{
+    viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
+  }>(
     `query ($zoneTag: String!, $since: String!, $until: String!) {
       viewer { zones(filter: { zoneTag: $zoneTag }) {
         httpRequestsAdaptiveGroups(
@@ -172,7 +195,7 @@ async function topCountries(zoneId: string) {
     { zoneTag: zoneId, since: sinceDateTime, until: untilDateTime },
   );
   const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
-  return groups.map((g: any) => ({
+  return groups.map((g) => ({
     country: g.dimensions?.clientCountryName ?? "?",
     count: g.count ?? 0,
   }));
@@ -183,7 +206,9 @@ async function topCountries(zoneId: string) {
 async function topReferrers(): Promise<{ referrer: string; count: number }[] | null> {
   if (!accountId) return null;
   try {
-    const data = await gql(
+    const data = await gql<{
+      viewer?: { accounts?: { rumPageloadEventsAdaptiveGroups?: AdaptiveGroup[] }[] };
+    }>(
       `query ($accountTag: String!, $since: String!, $until: String!) {
         viewer { accounts(filter: { accountTag: $accountTag }) {
           rumPageloadEventsAdaptiveGroups(
@@ -199,7 +224,7 @@ async function topReferrers(): Promise<{ referrer: string; count: number }[] | n
       { accountTag: accountId, since: sinceDateTime, until: untilDateTime },
     );
     const groups = data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups ?? [];
-    return groups.map((g: any) => ({
+    return groups.map((g) => ({
       referrer: g.dimensions?.refererHost || "(direct)",
       count: g.count ?? 0,
     }));
