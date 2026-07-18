@@ -21,11 +21,11 @@ export function SubscribedPage({ glyph }: { glyph: string }) {
       <p className="mt-6 text-[11px] uppercase tracking-[0.25em]">A Digest By Post</p>
       <Rule />
       <h1 className="font-serif text-3xl font-bold leading-tight sm:text-4xl">
-        Your subscription is noted
+        Your subscription has taken root
       </h1>
       <p className="mt-4 text-[14px] italic leading-snug">
-        A note of confirmation is on its way by electronic mail. Kindly open it and confirm your
-        request, and each new edition shall be dispatched to you thereafter.
+        A confirmation email is heading your way. Give it a quick nod, and fresh cloves of news will
+        follow.
       </p>
       <Rule />
       <p className="text-[11px] uppercase tracking-[0.25em]">

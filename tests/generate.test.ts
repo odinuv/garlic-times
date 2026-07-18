@@ -95,7 +95,7 @@ test("writePages emits the /subscribed/ thank-you page (noindex, self-canonical)
   await writePages({ editions: eds, aboutHtml: "<section>About</section>", outDir: out });
 
   const subscribed = readFileSync(join(out, "subscribed", "index.html"), "utf8");
-  expect(subscribed).toContain("Your subscription is noted");
+  expect(subscribed).toContain("Your subscription has taken root");
   expect(subscribed).toContain('<meta name="robots" content="noindex"/>');
   expect(subscribed).toContain('rel="canonical" href="https://www.thegarlictimes.com/subscribed/"');
   expect(subscribed).toContain("<title>Subscribed — The Garlic Times</title>");
