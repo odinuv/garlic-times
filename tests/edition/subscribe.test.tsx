@@ -55,20 +55,20 @@ test("SubscribeBox renders a POST form with the provider action and email field"
   expect(html).toContain('rel="noopener"');
 });
 
-test("SubscribeBox shows a consent line linking to /about/ when configured", () => {
+test("SubscribeBox shows a consent line linking to the privacy note when configured", () => {
   const html = renderToStaticMarkup(
     <SubscribeBox
       config={{ action: "https://provider.example/subscribe", emailField: "fields[email]" }}
     />,
   );
-  expect(html).toContain("agree to receive email editions");
-  expect(html).toContain('href="/about/"');
+  expect(html).toContain("By subscribing you accept our");
+  expect(html).toContain('href="/about/#privacy"');
 });
 
 test("SubscribeBox consent line only appears when configured", () => {
   const html = renderToStaticMarkup(<SubscribeBox config={null} />);
   expect(html).toBe("");
-  expect(html).not.toContain("agree to receive email editions");
+  expect(html).not.toContain("By subscribing you accept our");
 });
 
 test("SubscribeBox posts only the email field and configured hidden inputs (no extra required fields)", () => {

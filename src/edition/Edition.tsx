@@ -97,10 +97,10 @@ export function EditionPage({
         {rest.map((a, i) => (
           <ArticleBlock key={i} article={a} number={i + 3} date={edition.date} />
         ))}
-        {/* Owned-audience capture — a matching period box in the column flow.
-            Renders nothing until the newsletter provider is configured via env. */}
-        <SubscribeBox config={newsletter} />
         <RecipeBox recipe={edition.recipe} />
+        {/* Owned-audience capture — the last box in the column flow, after the
+            recipe. Renders nothing until the newsletter provider is configured. */}
+        <SubscribeBox config={newsletter} />
       </section>
 
       <Rule thick />

@@ -51,11 +51,11 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
   if (!config) return null;
   return (
     <aside className="border border-ink p-4 break-inside-avoid text-center" aria-label="Subscribe">
-      <p className="text-[11px] uppercase tracking-[0.25em]">By Post &amp; By Wire</p>
+      <p className="text-[11px] uppercase tracking-[0.25em]">A Digest By Post</p>
       <Rule />
       <h3 className="font-serif text-xl font-bold leading-tight">The Garlic Times, delivered</h3>
       <p className="mb-3 text-[12px] italic leading-snug">
-        Have each new edition sent to you by electronic mail. No charge; discontinue at any hour.
+        Each new edition, free, by electronic mail.
       </p>
       <form
         action={config.action}
@@ -88,8 +88,8 @@ export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {
           MailerLite field or checkbox that the no-JS POST wouldn't submit.
           Double opt-in is the backend record of consent. */}
       <p className="mt-2 text-[10px] italic leading-snug text-muted-foreground">
-        By subscribing you agree to receive email editions and accept our{" "}
-        <a href="/about/" className="underline">
+        By subscribing you accept our{" "}
+        <a href="/about/#privacy" className="underline">
           privacy note
         </a>
         .
