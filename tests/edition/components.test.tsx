@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { RatesBox } from "@/edition/components";
+import { ArticleBlock, RatesBox } from "@/edition/components";
+import { validEdition } from "../fixtures/valid-edition";
 
 const rates = {
   title: "The Garlic Market",
@@ -20,4 +21,15 @@ test("RatesBox renders the title, garlic lead, and mover rows", () => {
   expect(html).toContain("+4.0%");
   expect(html).toContain("Corn, Chicago");
   expect(html).toContain("Crude Oil");
+});
+
+test("engagement icons and the read-more link carry hover tooltips", () => {
+  // articles[0] has a sourceUrl, so the ">>" read-more link is rendered too.
+  const article = validEdition.articles[0];
+  const html = renderToStaticMarkup(
+    <ArticleBlock article={article} number={1} date="2026-06-27" />,
+  );
+  expect(html).toContain('title="Like this article"');
+  expect(html).toContain('title="Share this article"');
+  expect(html).toContain('title="Read the original article"');
 });

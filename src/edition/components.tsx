@@ -101,6 +101,7 @@ export function ArticleBlock({
                     rel="noopener noreferrer"
                     className="font-bold no-underline"
                     aria-label="Read the original article"
+                    title="Read the original article"
                   >
                     {">>"}
                   </a>
@@ -116,7 +117,12 @@ export function ArticleBlock({
           the pair reads as one consistent row. The anchors carry the labels, so
           the icons themselves are decorative (empty alt). */}
       <div className="mt-1 flex items-center justify-end gap-3">
-        <a href={`/${date}/${number}/`} aria-label="Like this article" className="no-underline">
+        <a
+          href={`/${date}/${number}/`}
+          aria-label="Like this article"
+          title="Like this article"
+          className="no-underline"
+        >
           <img
             src="/static/thumbs-up.png"
             alt=""
@@ -134,6 +140,7 @@ export function ArticleBlock({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share this article"
+          title="Share this article"
           className="js-share no-underline"
         >
           <img
