@@ -18,7 +18,7 @@ export function SubscribedPage({ glyph }: { glyph: string }) {
         height={96}
         className="mx-auto h-20 w-20 object-contain mix-blend-multiply"
       />
-      <p className="mt-6 text-[11px] uppercase tracking-[0.25em]">By Post &amp; By Wire</p>
+      <p className="mt-6 text-[11px] uppercase tracking-[0.25em]">A Digest By Post</p>
       <Rule />
       <h1 className="font-serif text-3xl font-bold leading-tight sm:text-4xl">
         Your subscription is noted
