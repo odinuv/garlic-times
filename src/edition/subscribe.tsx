@@ -1,13 +1,16 @@
 // src/edition/subscribe.tsx
 // Period-styled newsletter signup box. The Garlic Times is a static site with no
 // runtime server, so subscriber capture must be delegated to a third-party form
-// endpoint (the browser POSTs straight to the provider). Because the provider /
-// account is a vendor decision owned by the CEO, this component is *gated*: it
-// renders nothing until a form action is configured via env, so no half-wired
-// form ever ships to production. Once a provider is chosen, set the env vars (or
-// pass a config) and mount <SubscribeBox> — no other code change is required.
+// endpoint (the browser POSTs straight to the provider). This component is
+// *gated*: it renders nothing until a form action is configured, so no
+// half-wired form ever ships to production. The config helper lives in
+// ./newsletter — this file exports only the component. Once a provider is
+// chosen, set the env vars (or pass a config) and mount <SubscribeBox>.
 import React from "react";
 import { Rule } from "@/edition/components";
+import type { NewsletterConfig } from "@/edition/newsletter";
+
+export type { NewsletterConfig } from "@/edition/newsletter";
 
 // Progressive enhancement: the no-JS POST lands the reader on the provider's raw
 // `{"success":true}` JSON, because MailerLite's own redirect-to-thank-you-page is
@@ -25,43 +28,6 @@ const SUBSCRIBE_SCRIPT =
   "e.preventDefault();" +
   'fetch(f.action,{method:"POST",body:new FormData(f),mode:"no-cors"})' +
   '.then(g,g);function g(){location.href="/subscribed/";}});';
-
-export interface NewsletterConfig {
-  /** Provider form endpoint the browser POSTs to (e.g. a MailerLite/Buttondown embed URL). */
-  action: string;
-  /** Name attribute the provider expects for the email field. */
-  emailField: string;
-  /** Provider hidden fields (list id, redirect, etc.), rendered as hidden inputs. */
-  hidden?: Record<string, string>;
-}
-
-/**
- * Build a NewsletterConfig from environment, or null when unconfigured.
- * NEWSLETTER_FORM_ACTION is the switch: absent/empty => capture is off.
- */
-export function newsletterConfigFromEnv(
-  env: Record<string, string | undefined> = process.env,
-): NewsletterConfig | null {
-  const action = env.NEWSLETTER_FORM_ACTION?.trim();
-  if (!action) return null;
-
-  let hidden: Record<string, string> | undefined;
-  const rawHidden = env.NEWSLETTER_HIDDEN_FIELDS?.trim();
-  if (rawHidden) {
-    try {
-      const parsed = JSON.parse(rawHidden);
-      if (parsed && typeof parsed === "object") hidden = parsed as Record<string, string>;
-    } catch {
-      // Ignore malformed hidden-field JSON rather than break the build.
-    }
-  }
-
-  return {
-    action,
-    emailField: env.NEWSLETTER_EMAIL_FIELD?.trim() || "email",
-    hidden,
-  };
-}
 
 /** Newsletter signup box. Renders null when `config` is null (capture not yet wired). */
 export function SubscribeBox({ config }: { config: NewsletterConfig | null }) {

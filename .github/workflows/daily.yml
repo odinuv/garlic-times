@@ -27,7 +27,7 @@ jobs:
         run: bun run scripts/archive-restore.ts
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-          AZURE_STORAGE_CONTAINER: ${{ secrets.AZURE_STORAGE_CONTAINER }}
+          AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
 
       - name: Ingest today's news
         # Ingest is non-deterministic (live feeds + Gemini) and fails loudly when a
@@ -59,7 +59,7 @@ jobs:
         run: bun run scripts/archive-save.ts
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-          AZURE_STORAGE_CONTAINER: ${{ secrets.AZURE_STORAGE_CONTAINER }}
+          AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
 
       - name: Generate the full site
         run: bun run generate

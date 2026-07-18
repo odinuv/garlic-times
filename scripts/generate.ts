@@ -6,7 +6,7 @@ import { parseEdition, type Edition } from "@/edition/schema";
 import { buildFeed } from "@/edition/feed";
 import { EditionPage } from "@/edition/Edition";
 import { SubscribedPage } from "@/edition/Subscribed";
-import { newsletterConfigFromEnv, type NewsletterConfig } from "@/edition/subscribe";
+import { newsletterConfigFromEnv, type NewsletterConfig } from "@/edition/newsletter";
 import { renderDocument, type SocialMeta } from "@/edition/shell";
 import { absoluteUrl } from "@/edition/site";
 
