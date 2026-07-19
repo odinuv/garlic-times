@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { isoWeek, isoWeekIsOdd, mondayToFriday, quotaForWeek } from "@/newsletter/week";
+import { isoWeek, isoWeekIsOdd, mondayToFriday, quotaForWeek, saturdayOf } from "@/newsletter/week";
 
 test("isoWeek matches known ISO-8601 week numbers", () => {
   expect(isoWeek("2026-01-01")).toBe(1); // Thu of ISO week 1
@@ -16,6 +16,13 @@ test("mondayToFriday returns that week's five weekdays for a Saturday", () => {
     "2026-07-17",
   ]);
   expect(week.map((d) => d.weekday)).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
+});
+
+test("saturdayOf resolves any day of the week to that week's Saturday", () => {
+  expect(saturdayOf("2026-07-18")).toBe("2026-07-18"); // Saturday -> itself
+  expect(saturdayOf("2026-07-19")).toBe("2026-07-18"); // Sunday run day -> the week's Saturday
+  expect(saturdayOf("2026-07-13")).toBe("2026-07-18"); // Monday -> Saturday
+  expect(saturdayOf("2026-07-17")).toBe("2026-07-18"); // Friday -> Saturday
 });
 
 test("quota flips by ISO-week parity: odd -> 3 cnn/2 fox, even -> 3 fox/2 cnn", () => {

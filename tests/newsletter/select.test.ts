@@ -22,7 +22,7 @@ function c(source: Source, weekday: Weekday, number: number, score: number): Sco
     source,
     score,
     title: `${source}-${weekday}-${number}`,
-    url: `https://x/${DATE[weekday]}/#article-${number}`,
+    url: `https://x/${DATE[weekday]}/${number}/`,
   };
 }
 

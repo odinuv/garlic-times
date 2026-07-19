@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { renderDigest, subjectFor } from "@/newsletter/render";
+import { renderDigest } from "@/newsletter/render";
 import type { Pick } from "@/newsletter/types";
 
 const picks: Pick[] = [
@@ -10,7 +10,7 @@ const picks: Pick[] = [
     number: 1,
     source: "cnn",
     title: "Firing garlic cartoon",
-    url: "https://x/2026-07-13/#article-1",
+    url: "https://x/2026-07-13/1/",
     score: 70,
     rank: 1,
   },
@@ -21,14 +21,15 @@ const picks: Pick[] = [
     number: 1,
     source: "fox",
     title: "Naval garlic hours away",
-    url: "https://x/2026-07-14/#article-1",
+    url: "https://x/2026-07-14/1/",
     score: 95,
     rank: 2,
   },
 ];
 
-test("subject teases the highest-scored pick", () => {
-  expect(subjectFor(picks)).toBe("The Garlic Times · Saturday Special: Naval garlic hours away");
+test("subject is the fixed masthead line (no headline teaser)", () => {
+  const { subject } = renderDigest(picks, { displayDate: "Saturday July 18, 2026" });
+  expect(subject).toBe("The Garlic Times · Saturday Special");
 });
 
 test("html contains every pick's link and title, plus the display date", () => {
@@ -41,8 +42,19 @@ test("html contains every pick's link and title, plus the display date", () => {
   expect(html).toContain("Saturday Special");
 });
 
-test("text alternative lists each pick as a plain link", () => {
-  const { text } = renderDigest(picks, { displayDate: "Saturday July 18, 2026" });
-  expect(text).toContain("Naval garlic hours away");
-  expect(text).toContain("https://x/2026-07-14/#article-1");
+test("each article has a >> read-more link to its per-article page", () => {
+  const { html } = renderDigest(picks, { displayDate: "Saturday July 18, 2026" });
+  const readMores = html.match(/&gt;&gt; Read more/g) ?? [];
+  expect(readMores).toHaveLength(picks.length);
+  for (const p of picks) {
+    expect(html).toContain(`href="${p.url}"`);
+  }
+});
+
+test("does not label the source (Fox/CNN) — only the weekday kicker", () => {
+  const { html } = renderDigest(picks, { displayDate: "Saturday July 18, 2026" });
+  expect(html).not.toContain("CNN");
+  expect(html).not.toContain("Fox");
+  expect(html).toContain("Mon");
+  expect(html).toContain("Tue");
 });

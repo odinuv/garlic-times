@@ -11,7 +11,7 @@ export interface Candidate {
   source: Source;
   title: string;
   dek?: string; // first body paragraph, used as the email blurb
-  url: string; // absolute: https://.../<date>/#article-<number>
+  url: string; // absolute per-article "like page": https://.../<date>/<number>/
 }
 
 export interface ScoredCandidate extends Candidate {

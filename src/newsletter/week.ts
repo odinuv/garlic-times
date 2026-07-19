@@ -48,6 +48,18 @@ export function mondayToFriday(date: string): { date: string; weekday: Weekday }
   });
 }
 
+/** The Saturday of the Mon–Sun week containing `date` (Monday + 5). This is the
+ *  digest's canonical date: it is sent on and displayed as this Saturday
+ *  regardless of the actual run day, so a late Sunday run still resolves to the
+ *  same Saturday rather than mislabelling the issue with the run day. */
+export function saturdayOf(date: string): string {
+  const dt = utc(date);
+  const day = dt.getUTCDay() || 7; // Mon=1..Sun=7
+  const sat = new Date(dt);
+  sat.setUTCDate(dt.getUTCDate() - (day - 1) + 5); // shift to Monday, then +5
+  return toIso(sat);
+}
+
 /** 3/2 source split by ISO-week parity: odd -> 3 cnn/2 fox, even -> 3 fox/2 cnn. */
 export function quotaForWeek(date: string): Quota {
   return isoWeekIsOdd(date) ? { cnn: 3, fox: 2 } : { cnn: 2, fox: 3 };

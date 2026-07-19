@@ -8,7 +8,6 @@ import {
 const campaign: Campaign = {
   subject: "S",
   html: "<b>h</b>",
-  plain: "h",
   groupId: "g1",
   fromName: "The Garlic Times",
   fromEmail: "post@thegarlictimes.com",

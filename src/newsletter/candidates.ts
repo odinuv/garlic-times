@@ -35,7 +35,10 @@ export function loadWeekCandidates(contentDir: string, saturdayDate: string): Ca
         source: resolveSource(article, i, date),
         title: article.title,
         dek: article.body[0],
-        url: absoluteUrl(`/${date}/#article-${number}`),
+        // Per-article permalink (/<date>/<n>/), i.e. the article's own page —
+        // the "like page" the newsletter links readers to. It resolves to the
+        // article (currently via a redirect to the edition anchor).
+        url: absoluteUrl(`/${date}/${number}/`),
       });
     });
   }

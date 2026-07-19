@@ -13,7 +13,7 @@ test("buildDigest ranks, selects five, and builds a record + email", async () =>
     const ids = [...args.prompt.matchAll(/(\d{4}-\d{2}-\d{2}#\d+)/g)].map((m) => m[1]);
     return JSON.stringify({ scores: ids.map((id, i) => ({ id, score: 100 - i })) });
   };
-  const { record, subject, html, text } = await buildDigest({
+  const { record, subject, html } = await buildDigest({
     contentDir: "tests/fixtures/newsletter",
     date: "2026-07-18",
     complete: fake,
@@ -22,10 +22,8 @@ test("buildDigest ranks, selects five, and builds a record + email", async () =>
   expect(record.quota).toEqual({ cnn: 3, fox: 2 }); // ISO week 29 is odd
   expect(record.picks).toHaveLength(5);
   expect(record.candidates.length).toBeGreaterThanOrEqual(record.picks.length);
-  expect(subject).toContain("Saturday Special");
+  expect(subject).toBe("The Garlic Times · Saturday Special");
   expect(html).toContain("thegarlictimes.com");
-  expect(typeof text).toBe("string");
-  expect(text.length).toBeGreaterThan(0);
 });
 
 test("alreadySent: null record is not already sent", () => {
