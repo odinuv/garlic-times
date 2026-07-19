@@ -51,12 +51,51 @@ export interface TrafficReport {
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
+
+// Cloudflare's Analytics API on this plan rejects any single query whose time
+// range is wider than 1 day. To cover an N-day look-back the report queries each
+// UTC calendar day separately and aggregates the results. A DayWindow carries the
+// bounds in both shapes the datasets want: `date` for httpRequests1dGroups
+// (date_geq/date_leq) and `startTime`/`endTime` for the adaptive datasets
+// (datetime_geq/datetime_leq).
+export type DayWindow = { date: string; startTime: string; endTime: string };
+
+// Enumerate one <=1-day window per UTC calendar day from `since` to `until`,
+// inclusive, oldest first. Exported for tests.
+export function dayWindows(since: Date, until: Date): DayWindow[] {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const first = Date.UTC(since.getUTCFullYear(), since.getUTCMonth(), since.getUTCDate());
+  const last = Date.UTC(until.getUTCFullYear(), until.getUTCMonth(), until.getUTCDate());
+  const windows: DayWindow[] = [];
+  for (let ms = first; ms <= last; ms += dayMs) {
+    const date = new Date(ms).toISOString().slice(0, 10);
+    windows.push({ date, startTime: `${date}T00:00:00Z`, endTime: `${date}T23:59:59Z` });
+  }
+  return windows;
+}
+
+// Sum counts for the same key across all day results, then sort desc and keep
+// the top `limit`. The per-day queries each return their own top slice, so this
+// is an approximation for keys that rank near the cutoff — good enough for the
+// traffic volumes here, and the only option under the 1-day-per-query limit.
+// Exported for tests.
+export function mergeCounts(
+  items: { key: string; count: number }[],
+  limit: number,
+): { key: string; count: number }[] {
+  const totals = new Map<string, number>();
+  for (const { key, count } of items) totals.set(key, (totals.get(key) ?? 0) + count);
+  return [...totals.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 const now = new Date();
 const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 const sinceDate = isoDate(since);
 const untilDate = isoDate(now);
-const sinceDateTime = since.toISOString();
-const untilDateTime = now.toISOString();
+const windows = dayWindows(since, now);
 
 type Zone = { id: string; name: string };
 
@@ -98,6 +137,30 @@ async function gql<T = unknown>(query: string, variables: Record<string, unknown
   return json.data as T;
 }
 
+// Run `fn` once per day window (concurrently) and collect the successes.
+// Tolerates days that error individually — e.g. beyond the plan's retention —
+// but rethrows the first error if EVERY day failed, so a genuine permission or
+// scope error still surfaces loudly (matching the pre-chunking behavior).
+async function forEachDay<T>(fn: (w: DayWindow) => Promise<T>): Promise<T[]> {
+  const results: T[] = [];
+  const errors: unknown[] = [];
+  await Promise.all(
+    windows.map(async (w) => {
+      try {
+        results.push(await fn(w));
+      } catch (err) {
+        errors.push(err);
+      }
+    }),
+  );
+  if (!results.length) {
+    throw errors[0] instanceof Error
+      ? errors[0]
+      : new Error(String(errors[0] ?? "all day queries failed"));
+  }
+  return results;
+}
+
 async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
   // Primary: REST /zones (needs Zone:Read). Fallback: GraphQL viewer.zones,
   // which lists whatever zones the token is scoped to see.
@@ -126,79 +189,102 @@ async function resolveZones(): Promise<{ zones: Zone[]; seenCount: number }> {
 }
 
 async function zoneTotals(zoneId: string) {
-  const data = await gql<{
-    viewer?: { zones?: { httpRequests1dGroups?: Requests1dGroup[] }[] };
-  }>(
-    `query ($zoneTag: String!, $since: String!, $until: String!) {
-      viewer { zones(filter: { zoneTag: $zoneTag }) {
-        httpRequests1dGroups(limit: 100, filter: { date_geq: $since, date_leq: $until }) {
-          sum { pageViews requests }
-          uniq { uniques }
-        }
-      } }
-    }`,
-    { zoneTag: zoneId, since: sinceDate, until: untilDate },
+  // One query per day (the plan caps a query at 1 day wide), then sum. Summing
+  // daily uniques across days over-counts repeat visitors — but the previous
+  // single-query version summed the per-day httpRequests1dGroups the same way,
+  // so this preserves that behavior.
+  const perDay = await forEachDay(async (w) => {
+    const data = await gql<{
+      viewer?: { zones?: { httpRequests1dGroups?: Requests1dGroup[] }[] };
+    }>(
+      `query ($zoneTag: String!, $date: String!) {
+        viewer { zones(filter: { zoneTag: $zoneTag }) {
+          httpRequests1dGroups(limit: 1, filter: { date_geq: $date, date_leq: $date }) {
+            sum { pageViews requests }
+            uniq { uniques }
+          }
+        } }
+      }`,
+      { zoneTag: zoneId, date: w.date },
+    );
+    const groups = data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
+    let pageViews = 0,
+      requests = 0,
+      uniques = 0;
+    for (const g of groups) {
+      pageViews += g.sum?.pageViews ?? 0;
+      requests += g.sum?.requests ?? 0;
+      uniques += g.uniq?.uniques ?? 0;
+    }
+    return { pageViews, requests, uniques };
+  });
+  return perDay.reduce(
+    (acc, d) => ({
+      pageViews: acc.pageViews + d.pageViews,
+      requests: acc.requests + d.requests,
+      uniques: acc.uniques + d.uniques,
+    }),
+    { pageViews: 0, requests: 0, uniques: 0 },
   );
-  const groups = data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
-  let pageViews = 0,
-    requests = 0,
-    uniques = 0;
-  for (const g of groups) {
-    pageViews += g.sum?.pageViews ?? 0;
-    requests += g.sum?.requests ?? 0;
-    uniques += g.uniq?.uniques ?? 0;
-  }
-  return { pageViews, requests, uniques };
 }
 
 async function topPages(zoneId: string) {
-  const data = await gql<{
-    viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
-  }>(
-    `query ($zoneTag: String!, $since: String!, $until: String!) {
-      viewer { zones(filter: { zoneTag: $zoneTag }) {
-        httpRequestsAdaptiveGroups(
-          limit: 15
-          filter: { datetime_geq: $since, datetime_leq: $until, edgeResponseStatus: 200, requestSource: "eyeball" }
-          orderBy: [count_DESC]
-        ) {
-          count
-          dimensions { clientRequestPath }
-        }
-      } }
-    }`,
-    { zoneTag: zoneId, since: sinceDateTime, until: untilDateTime },
-  );
-  const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
-  return groups
-    .map((g) => ({ path: g.dimensions?.clientRequestPath ?? "?", count: g.count ?? 0 }))
-    .filter((r) => !/\.(css|js|png|jpe?g|svg|ico|webp|woff2?|txt|xml)$/i.test(r.path))
-    .slice(0, 10);
+  const perDay = await forEachDay(async (w) => {
+    const data = await gql<{
+      viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
+    }>(
+      `query ($zoneTag: String!, $since: String!, $until: String!) {
+        viewer { zones(filter: { zoneTag: $zoneTag }) {
+          httpRequestsAdaptiveGroups(
+            limit: 15
+            filter: { datetime_geq: $since, datetime_leq: $until, edgeResponseStatus: 200, requestSource: "eyeball" }
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { clientRequestPath }
+          }
+        } }
+      }`,
+      { zoneTag: zoneId, since: w.startTime, until: w.endTime },
+    );
+    const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
+    return groups.map((g) => ({
+      key: g.dimensions?.clientRequestPath ?? "?",
+      count: g.count ?? 0,
+    }));
+  });
+  const items = perDay
+    .flat()
+    .filter((r) => !/\.(css|js|png|jpe?g|svg|ico|webp|woff2?|txt|xml)$/i.test(r.key));
+  return mergeCounts(items, 10).map((r) => ({ path: r.key, count: r.count }));
 }
 
 async function topCountries(zoneId: string) {
-  const data = await gql<{
-    viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
-  }>(
-    `query ($zoneTag: String!, $since: String!, $until: String!) {
-      viewer { zones(filter: { zoneTag: $zoneTag }) {
-        httpRequestsAdaptiveGroups(
-          limit: 10
-          filter: { datetime_geq: $since, datetime_leq: $until, requestSource: "eyeball" }
-          orderBy: [count_DESC]
-        ) {
-          count
-          dimensions { clientCountryName }
-        }
-      } }
-    }`,
-    { zoneTag: zoneId, since: sinceDateTime, until: untilDateTime },
-  );
-  const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
-  return groups.map((g) => ({
-    country: g.dimensions?.clientCountryName ?? "?",
-    count: g.count ?? 0,
-  }));
+  const perDay = await forEachDay(async (w) => {
+    const data = await gql<{
+      viewer?: { zones?: { httpRequestsAdaptiveGroups?: AdaptiveGroup[] }[] };
+    }>(
+      `query ($zoneTag: String!, $since: String!, $until: String!) {
+        viewer { zones(filter: { zoneTag: $zoneTag }) {
+          httpRequestsAdaptiveGroups(
+            limit: 10
+            filter: { datetime_geq: $since, datetime_leq: $until, requestSource: "eyeball" }
+            orderBy: [count_DESC]
+          ) {
+            count
+            dimensions { clientCountryName }
+          }
+        } }
+      }`,
+      { zoneTag: zoneId, since: w.startTime, until: w.endTime },
+    );
+    const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups ?? [];
+    return groups.map((g) => ({
+      key: g.dimensions?.clientCountryName ?? "?",
+      count: g.count ?? 0,
+    }));
+  });
+  return mergeCounts(perDay.flat(), 10).map((r) => ({ country: r.key, count: r.count }));
 }
 
 // Referrers + entry pages from Cloudflare Web Analytics (RUM). Empty until the
@@ -206,28 +292,31 @@ async function topCountries(zoneId: string) {
 async function topReferrers(): Promise<{ referrer: string; count: number }[] | null> {
   if (!accountId) return null;
   try {
-    const data = await gql<{
-      viewer?: { accounts?: { rumPageloadEventsAdaptiveGroups?: AdaptiveGroup[] }[] };
-    }>(
-      `query ($accountTag: String!, $since: String!, $until: String!) {
-        viewer { accounts(filter: { accountTag: $accountTag }) {
-          rumPageloadEventsAdaptiveGroups(
-            limit: 10
-            filter: { datetime_geq: $since, datetime_leq: $until }
-            orderBy: [count_DESC]
-          ) {
-            count
-            dimensions { refererHost }
-          }
-        } }
-      }`,
-      { accountTag: accountId, since: sinceDateTime, until: untilDateTime },
-    );
-    const groups = data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups ?? [];
-    return groups.map((g) => ({
-      referrer: g.dimensions?.refererHost || "(direct)",
-      count: g.count ?? 0,
-    }));
+    const perDay = await forEachDay(async (w) => {
+      const data = await gql<{
+        viewer?: { accounts?: { rumPageloadEventsAdaptiveGroups?: AdaptiveGroup[] }[] };
+      }>(
+        `query ($accountTag: String!, $since: String!, $until: String!) {
+          viewer { accounts(filter: { accountTag: $accountTag }) {
+            rumPageloadEventsAdaptiveGroups(
+              limit: 10
+              filter: { datetime_geq: $since, datetime_leq: $until }
+              orderBy: [count_DESC]
+            ) {
+              count
+              dimensions { refererHost }
+            }
+          } }
+        }`,
+        { accountTag: accountId, since: w.startTime, until: w.endTime },
+      );
+      const groups = data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups ?? [];
+      return groups.map((g) => ({
+        key: g.dimensions?.refererHost || "(direct)",
+        count: g.count ?? 0,
+      }));
+    });
+    return mergeCounts(perDay.flat(), 10).map((r) => ({ referrer: r.key, count: r.count }));
   } catch {
     return null; // RUM not enabled yet, or token lacks account analytics scope.
   }

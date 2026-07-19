@@ -3,7 +3,13 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createFakeBlobStore } from "@/archive/blob";
-import { renderMarkdown, persist, type TrafficReport } from "../scripts/analytics-report";
+import {
+  renderMarkdown,
+  persist,
+  dayWindows,
+  mergeCounts,
+  type TrafficReport,
+} from "../scripts/analytics-report";
 
 const zoneReport: TrafficReport = {
   generatedAt: "2026-07-15T00:00:00.000Z",
@@ -23,6 +29,44 @@ const zoneReport: TrafficReport = {
   referrers: null,
   totals: { pageViews: 100, uniques: 40 },
 };
+
+test("dayWindows enumerates one <=1-day UTC window per calendar day, inclusive", () => {
+  const since = new Date("2026-07-12T12:00:00Z");
+  const until = new Date("2026-07-15T09:30:00Z");
+  const windows = dayWindows(since, until);
+
+  expect(windows.map((w) => w.date)).toEqual([
+    "2026-07-12",
+    "2026-07-13",
+    "2026-07-14",
+    "2026-07-15",
+  ]);
+  expect(windows[0]).toEqual({
+    date: "2026-07-12",
+    startTime: "2026-07-12T00:00:00Z",
+    endTime: "2026-07-12T23:59:59Z",
+  });
+  // Every window must be strictly under 1 day wide — the plan's hard limit.
+  for (const w of windows) {
+    expect(Date.parse(w.endTime) - Date.parse(w.startTime)).toBeLessThan(24 * 60 * 60 * 1000);
+  }
+});
+
+test("mergeCounts sums counts per key across days, sorts desc, keeps top N", () => {
+  const merged = mergeCounts(
+    [
+      { key: "/", count: 10 },
+      { key: "/about", count: 3 },
+      { key: "/", count: 5 }, // same key, another day
+      { key: "/2026-07-14", count: 8 },
+    ],
+    2,
+  );
+  expect(merged).toEqual([
+    { key: "/", count: 15 },
+    { key: "/2026-07-14", count: 8 },
+  ]);
+});
 
 test("renderMarkdown is byte-for-byte stable for a zone report", () => {
   const expected = [
