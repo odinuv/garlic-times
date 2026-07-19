@@ -42,6 +42,11 @@ test("real client creates then schedules the campaign via the API", async () => 
   expect(res.id).toBe("camp_123");
   expect(calls[0].url).toContain("/api/campaigns");
   expect(calls[0].method).toBe("POST");
+  const createBody = calls[0].body as {
+    emails: Array<{ content: unknown }>;
+  };
+  expect(typeof createBody.emails[0].content).toBe("string");
+  expect(createBody.emails[0].content).toBe(campaign.html);
   expect(calls[1].url).toContain("/api/campaigns/camp_123/schedule");
 });
 

@@ -48,7 +48,7 @@ export function createMailerLiteClient(
             subject: c.subject,
             from_name: c.fromName,
             from: c.fromEmail,
-            content: { html: c.html, plain_text: c.plain },
+            content: c.html,
           },
         ],
         groups: [c.groupId],
