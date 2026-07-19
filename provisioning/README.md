@@ -8,13 +8,13 @@ then outputs the credentials to wire into the workflow's GitHub secrets/vars.
 
 ## What it creates
 
-| Resource | Setting | Why |
-| --- | --- | --- |
-| `azurerm_resource_group` | region `westeurope` (var) | container for the account |
-| `azurerm_storage_account` | Standard · **LRS** · StorageV2 · **Hot** | cheapest redundancy; Hot suits one small blob read+written daily |
-| `azurerm_storage_container.state` | `private` access | holds `state-latest.tar.gz` |
-| `azurerm_storage_container.analytics` | `private` access | holds the weekly traffic report: `raw/<date>.json`, `reports/<date>.md`, and the rolling `traffic-log.md` (written by `scripts/analytics-report.ts`) |
-| `azurerm_storage_management_policy` | only if `enable_versioning` | expires old blob versions so durability doesn't grow cost |
+| Resource                              | Setting                                  | Why                                                                                                                                                  |
+| ------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `azurerm_resource_group`              | region `westeurope` (var)                | container for the account                                                                                                                            |
+| `azurerm_storage_account`             | Standard · **LRS** · StorageV2 · **Hot** | cheapest redundancy; Hot suits one small blob read+written daily                                                                                     |
+| `azurerm_storage_container.state`     | `private` access                         | holds `state-latest.tar.gz`                                                                                                                          |
+| `azurerm_storage_container.analytics` | `private` access                         | holds the weekly traffic report: `raw/<date>.json`, `reports/<date>.md`, and the rolling `traffic-log.md` (written by `scripts/analytics-report.ts`) |
+| `azurerm_storage_management_policy`   | only if `enable_versioning`              | expires old blob versions so durability doesn't grow cost                                                                                            |
 
 Analytics blobs are **kept indefinitely** — they're small and the point is a
 durable historical baseline, so no lifecycle rule expires them.
