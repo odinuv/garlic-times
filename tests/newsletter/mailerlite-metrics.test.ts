@@ -7,7 +7,9 @@ import {
 } from "@/newsletter/mailerlite-metrics";
 
 // A MailerLite-shaped GET stub: routes on the request path and returns the
-// canned JSON body for each endpoint the metrics client touches.
+// canned JSON body for each endpoint the metrics client touches. The client
+// pages through each list endpoint, so a single-page body (< 100 items) ends
+// the loop after page 1.
 function stubFetch(routes: Record<string, unknown>) {
   const calls: string[] = [];
   const fn = (async (url: string | URL) => {
@@ -27,20 +29,36 @@ const GROUPS = {
   ],
 };
 
-// Two sent campaigns: one inside the 7-day window, one older than it.
+// Two sent campaigns: one inside the 7-day window, one older than it. Stats
+// carry both total and unique open/click counts so we can prove the rate uses
+// the unique fields (total opens can exceed recipients and read as >100%).
 const CAMPAIGNS = {
   data: [
     {
       id: "c_recent",
       name: "Saturday Special — Jul 18",
       finished_at: "2026-07-18 08:01:00",
-      stats: { sent: 40, opens_count: 20, clicks_count: 8, unsubscribes_count: 1 },
+      stats: {
+        sent: 40,
+        opens_count: 61, // total opens — deliberately > recipients
+        unique_opens_count: 20,
+        clicks_count: 13, // total clicks
+        unique_clicks_count: 8,
+        unsubscribes_count: 1,
+      },
     },
     {
       id: "c_old",
       name: "Saturday Special — Jul 04",
       finished_at: "2026-07-04 08:01:00",
-      stats: { sent: 30, opens_count: 15, clicks_count: 4, unsubscribes_count: 0 },
+      stats: {
+        sent: 30,
+        opens_count: 20,
+        unique_opens_count: 15,
+        clicks_count: 6,
+        unique_clicks_count: 4,
+        unsubscribes_count: 0,
+      },
     },
   ],
 };
@@ -48,13 +66,19 @@ const CAMPAIGNS = {
 test("fetchMetrics reads the group's subscriber count and windows campaigns", async () => {
   const { fn, calls } = stubFetch({ "/groups": GROUPS, "/campaigns": CAMPAIGNS });
   const client = createMailerLiteMetricsClient("key_abc", fn);
-  const m = await client.fetchMetrics({ groupId: "g_news", sinceDate: "2026-07-12", days: 7 });
+  const m = await client.fetchMetrics({
+    groupId: "g_news",
+    sinceDate: "2026-07-12",
+    untilDate: "2026-07-19",
+    days: 7,
+  });
 
   // Subscriber count comes from the matching group's active_count.
   expect(m.subscribers).toBe(42);
   expect(m.groupName).toBe("The Garlic Times");
 
-  // Only the campaign sent inside the window is kept.
+  // Only the campaign sent inside the window is kept, and opens/clicks are the
+  // unique counts (20/8), not the totals (61/13).
   expect(m.campaigns.map((c) => c.id)).toEqual(["c_recent"]);
   expect(m.totals).toEqual({
     campaigns: 1,
@@ -64,17 +88,89 @@ test("fetchMetrics reads the group's subscriber count and windows campaigns", as
     unsubscribes: 1,
   });
 
-  // Auth header + both endpoints were called.
-  expect(calls.some((u) => u.includes("/groups"))).toBe(true);
-  expect(calls.some((u) => u.includes("/campaigns"))).toBe(true);
+  // Auth header + both endpoints were called (with pagination params).
+  expect(calls.some((u) => u.includes("/groups") && u.includes("page=1"))).toBe(true);
+  expect(calls.some((u) => u.includes("/campaigns") && u.includes("filter[status]=sent"))).toBe(
+    true,
+  );
 });
 
 test("fetchMetrics without a groupId sums active_count across all groups", async () => {
   const { fn } = stubFetch({ "/groups": GROUPS, "/campaigns": CAMPAIGNS });
   const client = createMailerLiteMetricsClient("key_abc", fn);
-  const m = await client.fetchMetrics({ sinceDate: "2026-07-12", days: 7 });
+  const m = await client.fetchMetrics({
+    sinceDate: "2026-07-12",
+    untilDate: "2026-07-19",
+    days: 7,
+  });
   expect(m.subscribers).toBe(45); // 3 + 42
   expect(m.groupName).toBeNull();
+});
+
+test("fetchMetrics throws when a configured groupId matches no group", async () => {
+  const { fn } = stubFetch({ "/groups": GROUPS, "/campaigns": CAMPAIGNS });
+  const client = createMailerLiteMetricsClient("key_abc", fn);
+  // A typo'd / stale MAILERLITE_GROUP_ID must fail the run, not silently report
+  // "0 subscribers" for a group that isn't there.
+  await expect(
+    client.fetchMetrics({
+      groupId: "g_typo",
+      sinceDate: "2026-07-12",
+      untilDate: "2026-07-19",
+      days: 7,
+    }),
+  ).rejects.toThrow(/g_typo/);
+});
+
+test("fetchMetrics honors the upper window bound (backfill window)", async () => {
+  const { fn } = stubFetch({ "/groups": GROUPS, "/campaigns": CAMPAIGNS });
+  const client = createMailerLiteMetricsClient("key_abc", fn);
+  // A historical window that ends before the recent campaign: only c_old (Jul 04)
+  // falls inside [Jul 01, Jul 10]; c_recent (Jul 18) is after untilDate.
+  const m = await client.fetchMetrics({
+    sinceDate: "2026-07-01",
+    untilDate: "2026-07-10",
+    days: 9,
+  });
+  expect(m.campaigns.map((c) => c.id)).toEqual(["c_old"]);
+});
+
+test("fetchMetrics pages through campaigns beyond the first 100", async () => {
+  // Page 1 returns a full page (100) of in-window campaigns → the client must
+  // request page 2, whose lone campaign would be missed by a single limit=100 read.
+  const page1 = Array.from({ length: 100 }, (_, i) => ({
+    id: `c_${i}`,
+    name: `Bulk ${i}`,
+    finished_at: "2026-07-15 08:00:00",
+    stats: { sent: 10, unique_opens_count: 5, unique_clicks_count: 1, unsubscribes_count: 0 },
+  }));
+  const page2 = [
+    {
+      id: "c_tail",
+      name: "Tail campaign",
+      finished_at: "2026-07-16 08:00:00",
+      stats: { sent: 10, unique_opens_count: 5, unique_clicks_count: 1, unsubscribes_count: 0 },
+    },
+  ];
+  const fn = (async (url: string | URL) => {
+    const u = String(url);
+    if (u.includes("/groups")) return new Response(JSON.stringify(GROUPS), { status: 200 });
+    if (u.includes("/campaigns")) {
+      const page = new URL(u).searchParams.get("page");
+      const body = page === "1" ? page1 : page === "2" ? page2 : [];
+      return new Response(JSON.stringify({ data: body }), { status: 200 });
+    }
+    return new Response("{}", { status: 404 });
+  }) as unknown as typeof fetch;
+
+  const client = createMailerLiteMetricsClient("key_abc", fn);
+  const m = await client.fetchMetrics({
+    sinceDate: "2026-07-12",
+    untilDate: "2026-07-19",
+    days: 7,
+  });
+  expect(m.totals.campaigns).toBe(101);
+  expect(m.campaigns.some((c) => c.id === "c_tail")).toBe(true);
 });
 
 test("real client throws with a MailerLite-tagged error on non-2xx", async () => {
@@ -83,28 +179,30 @@ test("real client throws with a MailerLite-tagged error on non-2xx", async () =>
       status: 401,
     })) as unknown as typeof fetch;
   const client = createMailerLiteMetricsClient("key_abc", fn);
-  await expect(client.fetchMetrics({ sinceDate: "2026-07-12", days: 7 })).rejects.toThrow(
-    /MailerLite/,
-  );
+  await expect(
+    client.fetchMetrics({ sinceDate: "2026-07-12", untilDate: "2026-07-19", days: 7 }),
+  ).rejects.toThrow(/MailerLite/);
 });
 
 test("fake client returns the injected metrics", async () => {
   const metrics: MailerLiteMetrics = {
     subscribers: 10,
     groupName: "g",
-    window: { sinceDate: "2026-07-12", days: 7 },
+    window: { sinceDate: "2026-07-12", untilDate: "2026-07-19", days: 7 },
     campaigns: [],
     totals: { campaigns: 0, recipients: 0, opens: 0, clicks: 0, unsubscribes: 0 },
   };
   const client = createFakeMailerLiteMetricsClient(metrics);
-  expect(await client.fetchMetrics({ sinceDate: "2026-07-12", days: 7 })).toEqual(metrics);
+  expect(
+    await client.fetchMetrics({ sinceDate: "2026-07-12", untilDate: "2026-07-19", days: 7 }),
+  ).toEqual(metrics);
 });
 
 test("renderEmailFunnel shows subscribers, per-campaign rows, and totals", () => {
   const metrics: MailerLiteMetrics = {
     subscribers: 42,
     groupName: "The Garlic Times",
-    window: { sinceDate: "2026-07-12", days: 7 },
+    window: { sinceDate: "2026-07-12", untilDate: "2026-07-19", days: 7 },
     campaigns: [
       {
         id: "c_recent",
@@ -132,7 +230,7 @@ test("renderEmailFunnel handles a window with no campaigns", () => {
   const metrics: MailerLiteMetrics = {
     subscribers: 5,
     groupName: null,
-    window: { sinceDate: "2026-07-12", days: 7 },
+    window: { sinceDate: "2026-07-12", untilDate: "2026-07-19", days: 7 },
     campaigns: [],
     totals: { campaigns: 0, recipients: 0, opens: 0, clicks: 0, unsubscribes: 0 },
   };

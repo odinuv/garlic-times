@@ -103,11 +103,18 @@ we can reach directly — so one read covers both.
   `src/newsletter/mailerlite-metrics.ts` and appended to the report by
   `scripts/analytics-report.ts`. It reports the current **subscriber count**
   (the configured group's `active_count`) plus, for every **regular campaign
-  sent inside the report window**, its recipients / opens / clicks /
-  unsubscribes and a totals row.
+  sent inside the report window** (`sinceDate … untilDate`, both bounds), its
+  recipients / opens / clicks / unsubscribes and a totals row. Opens and clicks
+  are **unique** counts (`unique_opens_count` / `unique_clicks_count`), so the
+  rates over recipients stay ≤ 100%. Both list endpoints are **paged through in
+  full** (they offer no sort or date filter), so the numbers stay correct as
+  campaign history grows past 100 rather than silently dropping recent sends.
 - **Config:** `MAILERLITE_API_KEY` (secret) and `MAILERLITE_GROUP_ID` (var) —
-  the same credentials the newsletter send uses. If the key is unset or
-  MailerLite is unreachable, the section degrades to a placeholder and the
-  traffic baseline still runs (the email funnel never fails the web report).
+  the same credentials the newsletter send uses. Any MailerLite problem — the
+  key unset, `MAILERLITE_GROUP_ID` matching no group, or a transient API/network
+  error — **fails the run** (non-zero exit), the same way the web side fails
+  rather than persisting an empty report. There is no placeholder/degrade path:
+  a report that looks complete but silently dropped the email funnel is worse
+  than a loud failure.
 - Lands in the **same** `traffic-log.md` / per-run report in the
   `garlic-times-analytics` blob container as the web baseline.
