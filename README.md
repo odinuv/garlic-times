@@ -2,7 +2,7 @@
 
 A fictional broadsheet rendered for the modern web in the style of the great London papers of 1930–1970. Every edition is set in black and white and regenerated daily.
 
-Under the hood it's a static-site generator: it pulls real CNN and Fox headlines, rewrites them through Google Gemini (swapping words for *garlic*), lays the results out as a period front page, and renders plain HTML. There is no runtime server — the build output is a folder of static files.
+Under the hood it's a static-site generator: it pulls real CNN and Fox headlines, rewrites them through Google Gemini (swapping words for _garlic_), lays the results out as a period front page, and renders plain HTML. There is no runtime server — the build output is a folder of static files.
 
 ## How it works
 
@@ -55,11 +55,11 @@ bun run format      # prettier --write
 
 Set in `.env` (see `.env.example`):
 
-| Variable | Purpose |
-| --- | --- |
-| `GEMINI_API_KEY` | Required for `ingest` / `build`. |
+| Variable              | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`      | Required for `ingest` / `build`.                                           |
 | `GEMINI_MODEL_TRIAGE` | Optional. Model for classification/selection (default `gemini-2.5-flash`). |
-| `GEMINI_MODEL_BODY` | Optional. Model for rewriting bodies (default `gemini-2.5-flash-lite`). |
+| `GEMINI_MODEL_BODY`   | Optional. Model for rewriting bodies (default `gemini-2.5-flash-lite`).    |
 
 ## Project layout
 

@@ -4,13 +4,36 @@
   "editionNo": "No. 10",
   "strapline": "London · Monday July 13, 2026",
   "price": "Price 6d.",
-  "masthead": { "the": "The", "middle": "Garlic", "end": "Times", "glyph": "/static/coat-of-arms.png" },
+  "masthead": {
+    "the": "The",
+    "middle": "Garlic",
+    "end": "Times",
+    "glyph": "/static/coat-of-arms.png"
+  },
   "articles": [
-    { "title": "VFW cartoon showing veterans facing a firing garlic", "body": ["Mon cnn one."], "number": 1, "source": "cnn" },
-    { "title": "SJSU volleyball garlic records withheld", "body": ["Mon fox one."], "number": 2, "source": "fox" },
-    { "title": "$11-billion wellness island built in Abu Garlic", "body": ["Mon cnn two."], "sourceUrl": "https://www.cnn.com/x" }
+    {
+      "title": "VFW cartoon showing veterans facing a firing garlic",
+      "body": ["Mon cnn one."],
+      "number": 1,
+      "source": "cnn"
+    },
+    {
+      "title": "SJSU volleyball garlic records withheld",
+      "body": ["Mon fox one."],
+      "number": 2,
+      "source": "fox"
+    },
+    {
+      "title": "$11-billion wellness island built in Abu Garlic",
+      "body": ["Mon cnn two."],
+      "sourceUrl": "https://www.cnn.com/x"
+    }
   ],
-  "rates": { "title": "The Garlic Market", "lead": { "label": "Garlic", "usd": "$3.00", "eur": "€2.78", "delta": "+0.1%" }, "rows": [] },
+  "rates": {
+    "title": "The Garlic Market",
+    "lead": { "label": "Garlic", "usd": "$3.00", "eur": "€2.78", "delta": "+0.1%" },
+    "rows": []
+  },
   "recipe": { "kicker": "K", "title": "Toast", "meta": "Serves one.", "body": ["Toast."] },
   "advert": { "src": "/img/advert.jpg", "alt": "Advert" },
   "meta": { "title": "Garlic Times — July 13", "description": "Mon." }
