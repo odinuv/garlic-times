@@ -3,7 +3,6 @@ const API = "https://connect.mailerlite.com/api";
 export interface Campaign {
   subject: string;
   html: string;
-  plain: string;
   groupId: string;
   fromName: string;
   fromEmail: string;

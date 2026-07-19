@@ -12,13 +12,14 @@ test("loads Mon–Fri candidates, skipping the missing Friday edition", () => {
   expect(c.length).toBeGreaterThanOrEqual(7);
 });
 
-test("maps id, weekday, number, source and an absolute anchor url", () => {
+test("maps id, weekday, number, source and an absolute per-article url", () => {
   const c = loadWeekCandidates(DIR, "2026-07-18");
   const first = c.find((x) => x.id === "2026-07-13#1")!;
   expect(first.weekday).toBe("Mon");
   expect(first.number).toBe(1);
   expect(first.source).toBe("cnn");
-  expect(first.url).toBe("https://www.thegarlictimes.com/2026-07-13/#article-1");
+  // per-article permalink (the "like page"), not the edition anchor
+  expect(first.url).toBe("https://www.thegarlictimes.com/2026-07-13/1/");
   expect(first.dek).toBe("Mon cnn one.");
 });
 

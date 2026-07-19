@@ -10,7 +10,7 @@ import { loadWeekCandidates } from "@/newsletter/candidates";
 import { rankCandidates } from "@/newsletter/rank";
 import { selectPicks } from "@/newsletter/select";
 import { renderDigest } from "@/newsletter/render";
-import { isoWeek, isoWeekIsOdd, mondayToFriday, quotaForWeek } from "@/newsletter/week";
+import { isoWeek, isoWeekIsOdd, mondayToFriday, quotaForWeek, saturdayOf } from "@/newsletter/week";
 import { createMailerLiteClient, type Campaign } from "@/newsletter/mailerlite";
 import type { DigestRecord } from "@/newsletter/types";
 import { todayIso } from "./author-edition";
@@ -46,7 +46,7 @@ export async function buildDigest(opts: {
   contentDir: string;
   date: string;
   complete: GeminiComplete;
-}): Promise<{ record: DigestRecord; subject: string; html: string; text: string }> {
+}): Promise<{ record: DigestRecord; subject: string; html: string }> {
   const { contentDir, date, complete } = opts;
   const candidates = loadWeekCandidates(contentDir, date);
   if (candidates.length === 0) {
@@ -56,7 +56,7 @@ export async function buildDigest(opts: {
   const quota = quotaForWeek(date);
   const { picks, fallbacksApplied } = selectPicks(scored, quota);
   const week = mondayToFriday(date);
-  const { subject, html, text } = renderDigest(picks, { displayDate: formatDisplayDate(date) });
+  const { subject, html } = renderDigest(picks, { displayDate: formatDisplayDate(date) });
   const record: DigestRecord = {
     saturdayDate: date,
     isoWeek: isoWeek(date),
@@ -69,11 +69,13 @@ export async function buildDigest(opts: {
     sentAt: "",
     campaignId: null,
   };
-  return { record, subject, html, text };
+  return { record, subject, html };
 }
 
 async function main(): Promise<void> {
-  const date = process.env.NEWSLETTER_DATE?.trim() || todayIso();
+  // Normalize whatever day we run on to that week's Saturday — the digest is
+  // always dated (and idempotency-keyed) by its Saturday, never the run day.
+  const date = saturdayOf(process.env.NEWSLETTER_DATE?.trim() || todayIso());
   const force = process.env.FORCE_SEND === "1";
 
   const recordDir = join("archive", "newsletter");
@@ -96,7 +98,7 @@ async function main(): Promise<void> {
   }
 
   const complete = createGeminiComplete();
-  const { record, subject, html, text } = await buildDigest({
+  const { record, subject, html } = await buildDigest({
     contentDir: "content",
     date,
     complete,
@@ -113,7 +115,7 @@ async function main(): Promise<void> {
   if (!existsSync(recordDir)) mkdirSync(recordDir, { recursive: true });
 
   if (apiKey && groupId && fromName && fromEmail) {
-    const campaign: Campaign = { subject, html, plain: text, groupId, fromName, fromEmail };
+    const campaign: Campaign = { subject, html, groupId, fromName, fromEmail };
     try {
       const { id } = await createMailerLiteClient(apiKey).sendCampaign(campaign);
       record.campaignId = id;
