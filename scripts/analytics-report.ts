@@ -27,9 +27,27 @@ const zoneFilter = (process.env.ZONES ?? "thegarlictimes.com,garlictimes.com")
   .map((z) => z.trim().toLowerCase())
   .filter(Boolean);
 
+// A page-views/visitors pair for one of the narrower "cleaner than raw" views of
+// the traffic. `visits` is Cloudflare's session-ish "visits" metric (the adaptive
+// and RUM datasets expose that, not unique-visitor counts).
+export interface SplitMetrics {
+  pageViews: number;
+  visits: number;
+}
+
 // Structured result assembled from Cloudflare before any markdown is rendered.
 // renderMarkdown() turns this into the human-readable report; persist() stores
 // both the JSON and the markdown in the analytics blob container.
+//
+// Each zone carries three views of the same week, rendered side by side:
+//   - all traffic (`pageViews`/`uniques`/`requests`) — raw zone analytics,
+//     bot-inflated (vulnerability scanners hammer /.env, /config/*.json, …);
+//   - `content` — server-side counts restricted to real pages (/, /about/, dated
+//     editions), so probe-path noise drops out;
+//   - `human` — the Cloudflare Web Analytics (RUM) beacon, i.e. page loads that
+//     executed JS in a real browser, which excludes virtually all scanners.
+// `content`/`human` are null when their dataset is unavailable (scope/beta/no
+// beacon) so the column degrades to "—" instead of failing the run.
 export interface TrafficReport {
   generatedAt: string; // ISO
   window: { sinceDate: string; untilDate: string; days: number };
@@ -40,12 +58,14 @@ export interface TrafficReport {
     pageViews: number;
     uniques: number;
     requests: number;
+    content: SplitMetrics | null;
+    human: SplitMetrics | null;
     topPages: { path: string; count: number }[];
     topCountries: { country: string; count: number }[];
     error?: string; // set when this zone's analytics query failed
   }>;
   referrers: { referrer: string; count: number }[] | null;
-  totals: { pageViews: number; uniques: number };
+  totals: { pageViews: number; uniques: number; contentPageViews: number; humanPageViews: number };
 }
 
 function isoDate(d: Date): string {
@@ -89,6 +109,20 @@ export function mergeCounts(
     .map(([key, count]) => ({ key, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+// GraphQL filter clauses that match only the site's real pages: the front page
+// (`/`), the about page, and each day's dated edition (`/<YYYY-MM-DD>/`). Editions
+// and /about use `_like` so a missing/extra trailing slash still matches; `/` must
+// be exact (a `/%` wildcard would match everything). These paths are all literals
+// or ISO dates we generate, so string-building the clause is injection-safe.
+// Exported for tests.
+export function contentPathFilters(days: DayWindow[]): string[] {
+  return [
+    `{ clientRequestPath: "/" }`,
+    `{ clientRequestPath_like: "/about%" }`,
+    ...days.map((w) => `{ clientRequestPath_like: "/${w.date}%" }`),
+  ];
 }
 
 const now = new Date();
@@ -135,6 +169,10 @@ async function gql<T = unknown>(query: string, variables: Record<string, unknown
     throw new Error(`GraphQL error: ${json.errors.map((e) => e.message).join("; ")}`);
   }
   return json.data as T;
+}
+
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 // Run `fn` once per day window (concurrently) and collect the successes.
@@ -287,6 +325,118 @@ async function topCountries(zoneId: string) {
   return mergeCounts(perDay.flat(), 10).map((r) => ({ country: r.key, count: r.count }));
 }
 
+// Server-side page views + visits restricted to the site's real content pages
+// (see contentPathFilters). One adaptive query per day (aggregate, no groupBy),
+// summed. Returns null — and logs — if the dataset/metric is unavailable, so the
+// column degrades to "—" without failing the zone.
+async function contentTotals(zoneId: string): Promise<SplitMetrics | null> {
+  const orClause = contentPathFilters(windows).join(", ");
+  try {
+    const perDay = await forEachDay(async (w) => {
+      const data = await gql<{
+        viewer?: {
+          zones?: {
+            httpRequestsAdaptiveGroups?: { count?: number; sum?: { visits?: number } }[];
+          }[];
+        };
+      }>(
+        `query ($zoneTag: String!, $since: String!, $until: String!) {
+          viewer { zones(filter: { zoneTag: $zoneTag }) {
+            httpRequestsAdaptiveGroups(
+              limit: 1
+              filter: { datetime_geq: $since, datetime_leq: $until, edgeResponseStatus: 200, requestSource: "eyeball", OR: [${orClause}] }
+            ) {
+              count
+              sum { visits }
+            }
+          } }
+        }`,
+        { zoneTag: zoneId, since: w.startTime, until: w.endTime },
+      );
+      const g = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups?.[0];
+      return { pageViews: g?.count ?? 0, visits: g?.sum?.visits ?? 0 };
+    });
+    return perDay.reduce(
+      (acc, d) => ({ pageViews: acc.pageViews + d.pageViews, visits: acc.visits + d.visits }),
+      { pageViews: 0, visits: 0 },
+    );
+  } catch (err) {
+    console.error(`content-page analytics unavailable for ${zoneId}: ${errMessage(err)}`);
+    return null;
+  }
+}
+
+// Human page views + visits from the Web Analytics (RUM) beacon, grouped by the
+// page's host so each zone can be matched to its own numbers. RUM is account-level
+// and beta; returns null — and logs — if it's unavailable (no beacon, missing
+// scope, or a schema mismatch), so the column degrades to "—".
+async function humanTotalsByHost(): Promise<Map<string, SplitMetrics> | null> {
+  if (!accountId) return null;
+  try {
+    const perDay = await forEachDay(async (w) => {
+      const data = await gql<{
+        viewer?: {
+          accounts?: {
+            rumPageloadEventsAdaptiveGroups?: {
+              count?: number;
+              sum?: { visits?: number };
+              dimensions?: { requestHost?: string };
+            }[];
+          }[];
+        };
+      }>(
+        `query ($accountTag: String!, $since: String!, $until: String!) {
+          viewer { accounts(filter: { accountTag: $accountTag }) {
+            rumPageloadEventsAdaptiveGroups(
+              limit: 100
+              filter: { datetime_geq: $since, datetime_leq: $until }
+              orderBy: [count_DESC]
+            ) {
+              count
+              sum { visits }
+              dimensions { requestHost }
+            }
+          } }
+        }`,
+        { accountTag: accountId, since: w.startTime, until: w.endTime },
+      );
+      return data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups ?? [];
+    });
+    const byHost = new Map<string, SplitMetrics>();
+    for (const g of perDay.flat()) {
+      const host = (g.dimensions?.requestHost ?? "").toLowerCase();
+      if (!host) continue;
+      const prev = byHost.get(host) ?? { pageViews: 0, visits: 0 };
+      byHost.set(host, {
+        pageViews: prev.pageViews + (g.count ?? 0),
+        visits: prev.visits + (g.sum?.visits ?? 0),
+      });
+    }
+    return byHost;
+  } catch (err) {
+    console.error(`RUM (human) analytics unavailable: ${errMessage(err)}`);
+    return null;
+  }
+}
+
+// Sum the RUM buckets belonging to a zone: its apex host and any subdomain of it
+// (e.g. www.<zone>). Returns null when RUM itself was unavailable.
+function humanForZone(
+  byHost: Map<string, SplitMetrics> | null,
+  zoneName: string,
+): SplitMetrics | null {
+  if (!byHost) return null;
+  const name = zoneName.toLowerCase();
+  const total = { pageViews: 0, visits: 0 };
+  for (const [host, m] of byHost) {
+    if (host === name || host.endsWith(`.${name}`)) {
+      total.pageViews += m.pageViews;
+      total.visits += m.visits;
+    }
+  }
+  return total;
+}
+
 // Referrers + entry pages from Cloudflare Web Analytics (RUM). Empty until the
 // CF_BEACON_TOKEN beacon has been live and collecting.
 async function topReferrers(): Promise<{ referrer: string; count: number }[] | null> {
@@ -340,7 +490,7 @@ async function buildReport(): Promise<TrafficReport> {
     seenZoneCount: seenCount,
     zones: [],
     referrers: null,
-    totals: { pageViews: 0, uniques: 0 },
+    totals: { pageViews: 0, uniques: 0, contentPageViews: 0, humanPageViews: 0 },
   };
 
   if (!zones.length) {
@@ -352,21 +502,33 @@ async function buildReport(): Promise<TrafficReport> {
     );
   }
 
+  // Human/RUM is account-level (one query set, then matched to zones by host).
+  const humanByHost = await humanTotalsByHost();
+
   for (const z of zones) {
     try {
       const totals = await zoneTotals(z.id);
-      const [pages, countries] = await Promise.all([topPages(z.id), topCountries(z.id)]);
+      const [pages, countries, content] = await Promise.all([
+        topPages(z.id),
+        topCountries(z.id),
+        contentTotals(z.id),
+      ]);
+      const human = humanForZone(humanByHost, z.name);
       report.zones.push({
         name: z.name,
         id: z.id,
         pageViews: totals.pageViews,
         uniques: totals.uniques,
         requests: totals.requests,
+        content,
+        human,
         topPages: pages,
         topCountries: countries,
       });
       report.totals.pageViews += totals.pageViews;
       report.totals.uniques += totals.uniques;
+      report.totals.contentPageViews += content?.pageViews ?? 0;
+      report.totals.humanPageViews += human?.pageViews ?? 0;
     } catch (err) {
       report.zones.push({
         name: z.name,
@@ -374,9 +536,11 @@ async function buildReport(): Promise<TrafficReport> {
         pageViews: 0,
         uniques: 0,
         requests: 0,
+        content: null,
+        human: null,
         topPages: [],
         topCountries: [],
-        error: err instanceof Error ? err.message : String(err),
+        error: errMessage(err),
       });
     }
   }
@@ -407,12 +571,29 @@ export function renderMarkdown(report: TrafficReport): string {
       lines.push(
         table(
           [
-            ["Page views", String(z.pageViews)],
-            ["Unique visitors", String(z.uniques)],
-            ["Total requests", String(z.requests)],
+            [
+              "Page views",
+              String(z.pageViews),
+              z.content ? String(z.content.pageViews) : "—",
+              z.human ? String(z.human.pageViews) : "—",
+            ],
+            [
+              "Visitors",
+              String(z.uniques),
+              z.content ? String(z.content.visits) : "—",
+              z.human ? String(z.human.visits) : "—",
+            ],
+            ["Total requests", String(z.requests), "—", "—"],
           ],
-          ["Metric", `Last ${days}d`],
+          ["Metric", `All traffic (${days}d)`, "Content pages", "Human (RUM)"],
         ),
+      );
+      lines.push("");
+      lines.push(
+        "_**All traffic** is raw Cloudflare zone analytics — includes bots/scanners hammering probe paths. " +
+          "**Content pages** counts only real pages (`/`, `/about/`, dated editions), server-side. " +
+          "**Human (RUM)** is the Web Analytics beacon: page loads that ran JS in a real browser, so scanners drop out. " +
+          "Visitors = unique visitors for All traffic, Cloudflare “visits” for the other two._",
       );
       lines.push("");
       lines.push("**Top pages**");
@@ -451,7 +632,8 @@ export function renderMarkdown(report: TrafficReport): string {
   }
   lines.push("");
   lines.push(
-    `**Totals across zones:** ${report.totals.pageViews} page views · ${report.totals.uniques} unique visitors (last ${days}d).`,
+    `**Totals across zones (last ${days}d):** ${report.totals.pageViews} all-traffic page views · ` +
+      `${report.totals.contentPageViews} content-page views · ${report.totals.humanPageViews} human (RUM) page views.`,
   );
 
   return lines.join("\n");
