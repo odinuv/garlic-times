@@ -42,3 +42,6 @@ jobs:
           DAYS: ${{ github.event.inputs.days || '7' }}
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           ANALYTICS_BLOB_CONTAINER: ${{ vars.ANALYTICS_BLOB_CONTAINER }}
+          # GAR-9: owned-audience (email funnel) metrics, appended to the same report.
+          MAILERLITE_API_KEY: ${{ secrets.MAILERLITE_API_KEY }}
+          MAILERLITE_GROUP_ID: ${{ vars.MAILERLITE_GROUP_ID }}
