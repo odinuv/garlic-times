@@ -20,6 +20,12 @@ export const articleSchema = z.object({
   columns: z.union([z.literal(1), z.literal(2)]).default(2),
   image: imageSchema.optional(),
   sourceUrl: z.string().optional(),
+  // 1-based article index within the edition; matches the #article-{n} anchor
+  // and per-article page. Optional/additive so older archived editions parse.
+  number: z.number().int().positive().optional(),
+  // Which source this article came from. The newsletter reads it directly;
+  // optional/additive for backward compatibility.
+  source: z.enum(["cnn", "fox"]).optional(),
 });
 
 export const editionSchema = z.object({

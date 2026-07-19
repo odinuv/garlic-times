@@ -22,5 +22,7 @@ export function transformStory(story: SourceStory, slot: Slot): Article {
     body: paras.length > 0 ? paras : story.body.slice(0, 1),
     image: slot.hasImage ? story.image : undefined,
     sourceUrl: story.sourceUrl,
+    number: slot.position,
+    source: slot.source,
   };
 }
