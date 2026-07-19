@@ -9,7 +9,13 @@ export const STATE_BLOB = "state-latest.tar.gz";
 const SOURCES = ["cnn", "fox"] as const;
 
 // Paths (relative to repo root) that must survive between runs.
-const STATE_PATHS = ["content/src", "content/img", "content/market.json", "archive/sources"];
+const STATE_PATHS = [
+  "content/src",
+  "content/img",
+  "content/market.json",
+  "archive/sources",
+  "archive/newsletter",
+];
 
 // GNU tar (Git-for-Windows) treats a drive-letter archive path ("C:\...tar.gz")
 // after -f as a remote host ("Cannot connect to C:"). Passing the archive as a
