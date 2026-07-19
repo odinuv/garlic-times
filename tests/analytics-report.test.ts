@@ -3,7 +3,14 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createFakeBlobStore } from "@/archive/blob";
-import { renderMarkdown, persist, type TrafficReport } from "../scripts/analytics-report";
+import {
+  renderMarkdown,
+  persist,
+  dayWindows,
+  mergeCounts,
+  contentPathFilters,
+  type TrafficReport,
+} from "../scripts/analytics-report";
 
 const zoneReport: TrafficReport = {
   generatedAt: "2026-07-15T00:00:00.000Z",
@@ -16,15 +23,74 @@ const zoneReport: TrafficReport = {
       pageViews: 100,
       uniques: 40,
       requests: 250,
+      content: { pageViews: 30, visits: 18 },
+      human: { pageViews: 12, visits: 9 },
       topPages: [{ path: "/", count: 60 }],
       topCountries: [{ country: "United States", count: 120 }],
     },
   ],
   referrers: null,
-  totals: { pageViews: 100, uniques: 40 },
+  totals: { pageViews: 100, uniques: 40, contentPageViews: 30, humanPageViews: 12 },
 };
 
-test("renderMarkdown is byte-for-byte stable for a zone report", () => {
+test("dayWindows enumerates one <=1-day UTC window per calendar day, inclusive", () => {
+  const since = new Date("2026-07-12T12:00:00Z");
+  const until = new Date("2026-07-15T09:30:00Z");
+  const windows = dayWindows(since, until);
+
+  expect(windows.map((w) => w.date)).toEqual([
+    "2026-07-12",
+    "2026-07-13",
+    "2026-07-14",
+    "2026-07-15",
+  ]);
+  expect(windows[0]).toEqual({
+    date: "2026-07-12",
+    startTime: "2026-07-12T00:00:00Z",
+    endTime: "2026-07-12T23:59:59Z",
+  });
+  // Every window must be strictly under 1 day wide — the plan's hard limit.
+  for (const w of windows) {
+    expect(Date.parse(w.endTime) - Date.parse(w.startTime)).toBeLessThan(24 * 60 * 60 * 1000);
+  }
+});
+
+test("mergeCounts sums counts per key across days, sorts desc, keeps top N", () => {
+  const merged = mergeCounts(
+    [
+      { key: "/", count: 10 },
+      { key: "/about", count: 3 },
+      { key: "/", count: 5 }, // same key, another day
+      { key: "/2026-07-14", count: 8 },
+    ],
+    2,
+  );
+  expect(merged).toEqual([
+    { key: "/", count: 15 },
+    { key: "/2026-07-14", count: 8 },
+  ]);
+});
+
+test("contentPathFilters matches /, /about, and each day's dated edition", () => {
+  const filters = contentPathFilters([
+    { date: "2026-07-14", startTime: "", endTime: "" },
+    { date: "2026-07-15", startTime: "", endTime: "" },
+  ]);
+  expect(filters).toEqual([
+    `{ clientRequestPath: "/" }`,
+    `{ clientRequestPath_like: "/about%" }`,
+    `{ clientRequestPath_like: "/2026-07-14%" }`,
+    `{ clientRequestPath_like: "/2026-07-15%" }`,
+  ]);
+});
+
+const CAPTION =
+  "_**All traffic** is raw Cloudflare zone analytics — includes bots/scanners hammering probe paths. " +
+  "**Content pages** counts only real pages (`/`, `/about/`, dated editions), server-side. " +
+  "**Human (RUM)** is the Web Analytics beacon: page loads that ran JS in a real browser, so scanners drop out. " +
+  "Visitors = unique visitors for All traffic, Cloudflare “visits” for the other two._";
+
+test("renderMarkdown shows all-traffic / content / human side by side", () => {
   const expected = [
     "## Traffic baseline — 2026-07-08 → 2026-07-15 (7d)",
     "",
@@ -32,7 +98,9 @@ test("renderMarkdown is byte-for-byte stable for a zone report", () => {
     "",
     "### thegarlictimes.com",
     "",
-    "| Metric | Last 7d |\n| --- | --- |\n| Page views | 100 |\n| Unique visitors | 40 |\n| Total requests | 250 |",
+    "| Metric | All traffic (7d) | Content pages | Human (RUM) |\n| --- | --- | --- | --- |\n| Page views | 100 | 30 | 12 |\n| Visitors | 40 | 18 | 9 |\n| Total requests | 250 | — | — |",
+    "",
+    CAPTION,
     "",
     "**Top pages**",
     "| Path | Views |\n| --- | --- |\n| / | 60 |",
@@ -44,9 +112,21 @@ test("renderMarkdown is byte-for-byte stable for a zone report", () => {
     "",
     "_Not available yet — enable Cloudflare Web Analytics (set `CF_BEACON_TOKEN`) and allow ~1 week of data. See docs/analytics.md._",
     "",
-    "**Totals across zones:** 100 page views · 40 unique visitors (last 7d).",
+    "**Totals across zones (last 7d):** 100 all-traffic page views · 30 content-page views · 12 human (RUM) page views.",
   ].join("\n");
   expect(renderMarkdown(zoneReport)).toBe(expected);
+});
+
+test("renderMarkdown falls back to — when content/human datasets are unavailable", () => {
+  const report: TrafficReport = {
+    ...zoneReport,
+    zones: [{ ...zoneReport.zones[0], content: null, human: null }],
+    totals: { pageViews: 100, uniques: 40, contentPageViews: 0, humanPageViews: 0 },
+  };
+  const md = renderMarkdown(report);
+  expect(md).toContain(
+    "| Page views | 100 | — | — |\n| Visitors | 40 | — | — |\n| Total requests | 250 | — | — |",
+  );
 });
 
 test("persist writes raw JSON, the report markdown, and prepends to the rolling log", async () => {
