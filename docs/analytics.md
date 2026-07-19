@@ -92,3 +92,22 @@ grant those scopes to the token in the Cloudflare dashboard.
 If the token can see **no zones at all** (e.g. it's still scoped for Pages
 deploys only), the report **fails the run** (non-zero exit) rather than
 persisting an empty placeholder — grant the scope above to fix it.
+
+## Email funnel — owned audience (GAR-9)
+
+The web numbers above measure **acquisition**. The same weekly report also carries
+an **Email funnel** section measuring **retention/conversion** — the owned audience
+we can reach directly — so one read covers both.
+
+- **Source:** MailerLite (`connect.mailerlite.com/api`), pulled by
+  `src/newsletter/mailerlite-metrics.ts` and appended to the report by
+  `scripts/analytics-report.ts`. It reports the current **subscriber count**
+  (the configured group's `active_count`) plus, for every **regular campaign
+  sent inside the report window**, its recipients / opens / clicks /
+  unsubscribes and a totals row.
+- **Config:** `MAILERLITE_API_KEY` (secret) and `MAILERLITE_GROUP_ID` (var) —
+  the same credentials the newsletter send uses. If the key is unset or
+  MailerLite is unreachable, the section degrades to a placeholder and the
+  traffic baseline still runs (the email funnel never fails the web report).
+- Lands in the **same** `traffic-log.md` / per-run report in the
+  `garlic-times-analytics` blob container as the web baseline.
