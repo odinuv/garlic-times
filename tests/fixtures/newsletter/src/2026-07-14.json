@@ -1,0 +1,16 @@
+{
+  "date": "2026-07-14",
+  "displayDate": "Tuesday July 14, 2026",
+  "editionNo": "No. 11",
+  "strapline": "London · Tuesday July 14, 2026",
+  "price": "Price 6d.",
+  "masthead": { "the": "The", "middle": "Garlic", "end": "Times", "glyph": "/static/coat-of-arms.png" },
+  "articles": [
+    { "title": "Tue fox article one", "body": ["Tue fox one."], "number": 1, "source": "fox" },
+    { "title": "Tue cnn article two", "body": ["Tue cnn one."], "number": 2, "source": "cnn" }
+  ],
+  "rates": { "title": "The Garlic Market", "lead": { "label": "Garlic", "usd": "$3.00", "eur": "€2.78", "delta": "+0.1%" }, "rows": [] },
+  "recipe": { "kicker": "K", "title": "Toast", "meta": "Serves one.", "body": ["Toast."] },
+  "advert": { "src": "/img/advert.jpg", "alt": "Advert" },
+  "meta": { "title": "Garlic Times — July 14", "description": "Tue." }
+}

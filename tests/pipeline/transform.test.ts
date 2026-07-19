@@ -41,3 +41,13 @@ test("byline rotates by slot position and includes a garlic correspondent", () =
   expect(at(2)).not.toBe(at(3));
   expect(at(3)).toContain("Garlic");
 });
+
+test("transformStory stamps the 1-based article number from the slot position", () => {
+  const slot: Slot = { position: 3, source: "fox", size: "md", columns: 1, hasImage: false };
+  expect(transformStory(story, slot).number).toBe(3);
+});
+
+test("transformStory stamps the source from the slot", () => {
+  const slot: Slot = { position: 1, source: "cnn", size: "xl", columns: 1, hasImage: true };
+  expect(transformStory(story, slot).source).toBe("cnn");
+});

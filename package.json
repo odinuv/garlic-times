@@ -12,7 +12,8 @@
     "author": "bun run scripts/author-edition.ts",
     "preview": "bun run scripts/serve.ts",
     "ingest": "bun run scripts/ingest-news.ts",
-    "build": "bun run scripts/build.ts"
+    "build": "bun run scripts/build.ts",
+    "send-newsletter": "bun run scripts/send-newsletter.ts"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.33.0",

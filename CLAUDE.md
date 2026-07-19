@@ -31,13 +31,34 @@ Config knobs live in `.env` (copy from `.env.example`): `GEMINI_API_KEY` (requir
 
 The system is **three sequential stages**, chained by `scripts/build.ts`. Understand them as a data pipeline where each stage's output is the next stage's input on disk:
 
-1. **Ingest** (`src/ingest/`, orchestrated by `runIngest` in `pipeline.ts`) — *non-deterministic*, uses Gemini + live network. Stages: `fetch` (RSS/sitemap + Readability → markdown) → `classify` (eligibility) → `garlic-title` (swap one title noun for garlic) → `select` (best 4 per source) → `body-swap` (garlic-swap + shorten, one concurrent LLM call per article) → `illustrate` (download/generate image) → `write`. Output: `content/sources/{cnn,fox}/*.json`. Fails loudly if a source yields < 3 usable articles. Clears the previous pool each run.
+1. **Ingest** (`src/ingest/`, orchestrated by `runIngest` in `pipeline.ts`) — _non-deterministic_, uses Gemini + live network. Stages: `fetch` (RSS/sitemap + Readability → markdown) → `classify` (eligibility) → `garlic-title` (swap one title noun for garlic) → `select` (best 4 per source) → `body-swap` (garlic-swap + shorten, one concurrent LLM call per article) → `illustrate` (download/generate image) → `write`. Output: `content/sources/{cnn,fox}/*.json`. Fails loudly if a source yields < 3 usable articles. Clears the previous pool each run.
 
-2. **Author** (`src/pipeline/`, `buildEdition.ts`) — *fully deterministic*, seeded from the date (`mulberry32(seedFromDate(date))`), no network. Loads the source pools, assigns **fixed layout slots** (`selection.ts`: 5 slots; which source leads flips by day-of-year parity), picks stories (image-bearing stories claim the two photo slots), `transformStory` maps each to an `Article` (paragraph count by size, rotating period bylines), adds `staticFields` (masthead, edition number, FX rates, advert) + a recipe, then **validates the whole thing through the Zod schema** before writing `content/src/<date>.json`.
+2. **Author** (`src/pipeline/`, `buildEdition.ts`) — _fully deterministic_, seeded from the date (`mulberry32(seedFromDate(date))`), no network. Loads the source pools, assigns **fixed layout slots** (`selection.ts`: 5 slots; which source leads flips by day-of-year parity), picks stories (image-bearing stories claim the two photo slots), `transformStory` maps each to an `Article` (paragraph count by size, rotating period bylines), adds `staticFields` (masthead, edition number, FX rates, advert) + a recipe, then **validates the whole thing through the Zod schema** before writing `content/src/<date>.json`.
 
-3. **Generate** (`src/edition/`, `scripts/generate.ts`) — *deterministic*, no network. Loads every edition JSON, renders each via React `renderToStaticMarkup` (`shell.tsx` wraps `<Edition>`), compiles Tailwind CSS via the CLI, copies `img/` + `static/` → `dist/`. Newest edition is also written to `dist/index.html`; each edition also lives at `dist/<date>/`. Prev/next navigation is wired by date order.
+3. **Generate** (`src/edition/`, `scripts/generate.ts`) — _deterministic_, no network. Loads every edition JSON, renders each via React `renderToStaticMarkup` (`shell.tsx` wraps `<Edition>`), compiles Tailwind CSS via the CLI, copies `img/` + `static/` → `dist/`. Newest edition is also written to `dist/index.html`; each edition also lives at `dist/<date>/`. Prev/next navigation is wired by date order.
 
 **`src/edition/schema.ts` is the contract between authoring and rendering.** Any change to edition JSON shape goes here first — `parseEdition` throws a readable error listing every failed field, and both the author step and `loadEditions` call it.
+
+### Weekly pipeline: the Saturday Special
+
+Separate from the daily chain, a **weekly newsletter** runs Saturdays 08:00 UTC
+(`.github/workflows/newsletter.yml` → `scripts/send-newsletter.ts`). It restores
+blob state, loads the week's **Mon–Fri** editions, and produces a five-article
+"editor's picks" digest emailed to MailerLite subscribers. It is **email-only and
+never published on the site** — that exclusivity is the subscription incentive; the
+daily pipeline is unchanged and still publishes a normal public Saturday paper.
+
+Selection keeps the determinism boundary: an **LLM ranker** (`src/newsletter/rank.ts`,
+Gemini, scores each article for comedic quality with a rubric + few-shot exemplars)
+feeds a **pure deterministic selector** (`src/newsletter/select.ts`, ISO-week-parity
+3/2 source quota + one-pick-per-weekday + relax-day/borrow-source/send-fewer
+fallbacks). The ranker is a swappable seam so a future likes-based ranker can
+replace it without touching the quota logic. Picks are recorded to
+`archive/newsletter/<date>.json` inside the cumulative state tarball (auditable,
+idempotent — a recorded date won't re-send unless `FORCE_SEND=1`).
+
+Run locally: `bun run send-newsletter` (needs `GEMINI_API_KEY`; sends only when the
+`MAILERLITE_*` vars are set, otherwise builds and prints).
 
 ### Key conventions
 
