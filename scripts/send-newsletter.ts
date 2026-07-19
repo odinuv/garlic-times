@@ -1,7 +1,7 @@
 // Weekly "Saturday Special" digest: pick 5 of the week's Mon–Fri articles with
 // an LLM + deterministic quota, email them via MailerLite, and record the picks
 // into the cumulative blob state. Modeled on scripts/analytics-report.ts.
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createGeminiComplete, type GeminiComplete } from "@/ingest/gemini";
 import { createAzureBlobStore } from "@/archive/blob";
@@ -30,6 +30,11 @@ const MONTHS = [
   "December",
 ];
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** A prior run counts as "already sent" only if it recorded a campaign id. */
+export function alreadySent(record: DigestRecord | null, force: boolean): boolean {
+  return !force && record != null && record.campaignId != null;
+}
 
 export function formatDisplayDate(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
@@ -73,9 +78,19 @@ async function main(): Promise<void> {
 
   const recordDir = join("archive", "newsletter");
   const recordPath = join(recordDir, `${date}.json`);
-  if (existsSync(recordPath) && !force) {
+
+  // Read existing record (if any) and skip only if a campaign was actually sent.
+  let existing: DigestRecord | null = null;
+  if (existsSync(recordPath)) {
+    try {
+      existing = JSON.parse(readFileSync(recordPath, "utf8")) as DigestRecord;
+    } catch {
+      existing = null;
+    }
+  }
+  if (alreadySent(existing, force)) {
     console.log(
-      `Digest for ${date} already recorded (${recordPath}); skipping. Set FORCE_SEND=1 to override.`,
+      `Digest for ${date} already sent (campaignId: ${existing!.campaignId}); skipping. Set FORCE_SEND=1 to override.`,
     );
     return;
   }
@@ -94,19 +109,28 @@ async function main(): Promise<void> {
   const fromName = process.env.MAILERLITE_FROM_NAME?.trim();
   const fromEmail = process.env.MAILERLITE_FROM_EMAIL?.trim();
 
+  // Ensure record dir exists before any external call so we can always write the audit trail.
+  if (!existsSync(recordDir)) mkdirSync(recordDir, { recursive: true });
+
   if (apiKey && groupId && fromName && fromEmail) {
     const campaign: Campaign = { subject, html, plain: text, groupId, fromName, fromEmail };
-    const { id } = await createMailerLiteClient(apiKey).sendCampaign(campaign);
-    record.campaignId = id;
-    record.sentAt = new Date().toISOString();
-    console.log(`Sent MailerLite campaign ${id}.`);
+    try {
+      const { id } = await createMailerLiteClient(apiKey).sendCampaign(campaign);
+      record.campaignId = id;
+      record.sentAt = new Date().toISOString();
+      console.log(`Sent MailerLite campaign ${id}.`);
+    } catch (err) {
+      // Write an audit record (campaignId null) so the failure is traceable, then re-throw.
+      writeFileSync(recordPath, JSON.stringify(record, null, 2) + "\n");
+      console.log(`Recorded failed-send audit trail to ${recordPath}`);
+      throw err;
+    }
   } else {
     console.log(
       "MailerLite not configured (MAILERLITE_API_KEY/GROUP_ID/FROM_NAME/FROM_EMAIL); building only, not sending.",
     );
   }
 
-  if (!existsSync(recordDir)) mkdirSync(recordDir, { recursive: true });
   writeFileSync(recordPath, JSON.stringify(record, null, 2) + "\n");
   console.log(`Recorded picks to ${recordPath}`);
 
