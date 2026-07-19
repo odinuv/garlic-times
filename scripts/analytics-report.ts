@@ -662,35 +662,36 @@ export async function persist(store: BlobStore, report: TrafficReport, markdown:
 // GAR-9: the MailerLite email funnel, rendered as a markdown section appended to
 // the traffic report so one weekly read covers web acquisition (Cloudflare) and
 // email retention (owned audience). Uses the same window as the web report.
-// Degrades to a placeholder — never throws — so a MailerLite outage or missing
-// key can't fail the traffic baseline the board relies on.
-async function emailFunnelSection(sinceDate: string, days: number): Promise<string> {
+// Any MailerLite problem — missing key, unknown group, transient API/network
+// error — fails the run, mirroring the web side (which also exits non-zero
+// rather than persisting an empty/placeholder report). No silent degrade: a
+// half-a-report that looks fine is worse than a loud failure.
+async function emailFunnelSection(
+  sinceDate: string,
+  untilDate: string,
+  days: number,
+): Promise<string> {
   const apiKey = process.env.MAILERLITE_API_KEY?.trim();
-  if (!apiKey) {
-    console.error("MAILERLITE_API_KEY not set; skipping email funnel section.");
-    return (
-      "### Email funnel — owned audience\n\n" +
-      "_Not available — set `MAILERLITE_API_KEY` to include MailerLite subscriber + campaign metrics (GAR-9)._"
-    );
-  }
-  try {
-    const client = createMailerLiteMetricsClient(apiKey);
-    const metrics = await client.fetchMetrics({
-      groupId: process.env.MAILERLITE_GROUP_ID?.trim() || undefined,
-      sinceDate,
-      days,
-    });
-    return renderEmailFunnel(metrics);
-  } catch (err) {
-    console.error(`MailerLite metrics unavailable: ${errMessage(err)}`);
-    return `### Email funnel — owned audience\n\n> ⚠️ Could not read MailerLite metrics: ${errMessage(err)}`;
-  }
+  if (!apiKey) throw new Error("MAILERLITE_API_KEY is not set");
+
+  const client = createMailerLiteMetricsClient(apiKey);
+  const metrics = await client.fetchMetrics({
+    groupId: process.env.MAILERLITE_GROUP_ID?.trim() || undefined,
+    sinceDate,
+    untilDate,
+    days,
+  });
+  return renderEmailFunnel(metrics);
 }
 
 async function main() {
   if (!token) throw new Error("CLOUDFLARE_API_TOKEN is not set");
   const report = await buildReport();
-  const emailSection = await emailFunnelSection(report.window.sinceDate, report.window.days);
+  const emailSection = await emailFunnelSection(
+    report.window.sinceDate,
+    report.window.untilDate,
+    report.window.days,
+  );
   const markdown = `${renderMarkdown(report)}\n\n${emailSection}`;
   await emit(markdown);
 

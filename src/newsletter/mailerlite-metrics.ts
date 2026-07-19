@@ -18,8 +18,8 @@ export interface CampaignStats {
   name: string;
   sentAt: string | null; // ISO date (YYYY-MM-DD) the campaign finished/was sent
   recipients: number; // stats.sent
-  opens: number; // stats.opens_count
-  clicks: number; // stats.clicks_count
+  opens: number; // stats.unique_opens_count (unique openers, so rate ≤ 100%)
+  clicks: number; // stats.unique_clicks_count (unique clickers, so rate ≤ 100%)
   unsubscribes: number; // stats.unsubscribes_count
 }
 
@@ -28,8 +28,8 @@ export interface CampaignStats {
 export interface MailerLiteMetrics {
   subscribers: number; // owned audience: group active_count (or account-wide sum)
   groupName: string | null; // group the count came from; null = summed all groups
-  window: { sinceDate: string; days: number };
-  campaigns: CampaignStats[]; // sent within the window, newest first
+  window: { sinceDate: string; untilDate: string; days: number };
+  campaigns: CampaignStats[]; // sent within [sinceDate, untilDate], newest first
   totals: {
     campaigns: number;
     recipients: number;
@@ -43,6 +43,7 @@ export interface MailerLiteMetricsClient {
   fetchMetrics(opts: {
     groupId?: string;
     sinceDate: string; // inclusive lower bound, YYYY-MM-DD
+    untilDate: string; // inclusive upper bound, YYYY-MM-DD
     days: number;
   }): Promise<MailerLiteMetrics>;
 }
@@ -59,8 +60,10 @@ type RawCampaign = {
   created_at?: string | null;
   stats?: {
     sent?: number;
-    opens_count?: number;
-    clicks_count?: number;
+    opens_count?: number; // total opens (can exceed recipients); we use the unique_ fields
+    unique_opens_count?: number;
+    clicks_count?: number; // total clicks; we use the unique_ fields
+    unique_clicks_count?: number;
     unsubscribes_count?: number;
   };
 };
@@ -103,37 +106,78 @@ export function createMailerLiteMetricsClient(
     return json;
   }
 
+  // These list endpoints offer no sort and no date filter, and cap each page at
+  // 100. A single limit=100 read therefore silently drops records once history
+  // passes 100 — in an order the API doesn't even document, so the recent
+  // campaigns we actually want could be the ones dropped. Page through the whole
+  // list and window/sort client-side instead: correctness then tracks the total
+  // record count (a young paper: a handful of pages), never a magic 100. Paging
+  // /groups the same way closes the "group isn't in the first 100" blind spot.
+  async function getAllPages<T>(
+    basePath: string,
+    filters: Record<string, string> = {},
+  ): Promise<T[]> {
+    const LIMIT = 100;
+    const MAX_PAGES = 50; // safety net (~5000 records) against an unbounded loop
+    const filterParams = Object.entries(filters).map(([k, v]) => `${k}=${v}`);
+    const out: T[] = [];
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const qs = [...filterParams, `limit=${LIMIT}`, `page=${page}`].join("&");
+      const { data } = await get<T>(`${basePath}?${qs}`);
+      const batch = data ?? [];
+      out.push(...batch);
+      if (batch.length < LIMIT) return out; // short/empty page ⇒ last page
+    }
+    console.error(
+      `MailerLite ${basePath}: reached the ${MAX_PAGES}-page cap; records beyond that were not read.`,
+    );
+    return out;
+  }
+
   return {
-    async fetchMetrics({ groupId, sinceDate, days }) {
-      const [groupsRes, campaignsRes] = await Promise.all([
-        get<RawGroup>("/groups?limit=100"),
-        // Regular campaigns only — RSS/automation don't belong in a weekly
-        // funnel. limit=100 covers a young paper's entire sent history.
-        get<RawCampaign>("/campaigns?filter[status]=sent&filter[type]=regular&limit=100"),
+    async fetchMetrics({ groupId, sinceDate, untilDate, days }) {
+      const [groups, rawCampaigns] = await Promise.all([
+        getAllPages<RawGroup>("/groups"),
+        // Regular campaigns only — RSS/automation don't belong in a weekly funnel.
+        getAllPages<RawCampaign>("/campaigns", {
+          "filter[status]": "sent",
+          "filter[type]": "regular",
+        }),
       ]);
 
-      const groups = groupsRes.data ?? [];
       let subscribers = 0;
       let groupName: string | null = null;
       if (groupId) {
         const g = groups.find((x) => String(x.id) === String(groupId));
-        subscribers = g?.active_count ?? 0;
-        groupName = g?.name ?? null;
+        // A configured-but-unknown group is a misconfiguration (typo, wrong ID),
+        // not an empty audience. Fail loudly rather than silently reporting a
+        // confusing "Subscribers: 0" that nobody would question.
+        if (!g) {
+          throw new Error(
+            `MailerLite: MAILERLITE_GROUP_ID "${groupId}" matched none of the ${groups.length} ` +
+              `group(s) on the account. Fix the ID, or unset it to sum all groups.`,
+          );
+        }
+        subscribers = g.active_count ?? 0;
+        groupName = g.name ?? null;
       } else {
         subscribers = groups.reduce((sum, g) => sum + (g.active_count ?? 0), 0);
       }
 
-      const campaigns: CampaignStats[] = (campaignsRes.data ?? [])
+      const campaigns: CampaignStats[] = rawCampaigns
         .map((c) => ({
           id: String(c.id ?? ""),
           name: c.name ?? "(untitled)",
           sentAt: campaignSentDate(c),
           recipients: c.stats?.sent ?? 0,
-          opens: c.stats?.opens_count ?? 0,
-          clicks: c.stats?.clicks_count ?? 0,
+          opens: c.stats?.unique_opens_count ?? 0,
+          clicks: c.stats?.unique_clicks_count ?? 0,
           unsubscribes: c.stats?.unsubscribes_count ?? 0,
         }))
-        .filter((c) => c.sentAt !== null && c.sentAt >= sinceDate)
+        // Both bounds: a lower bound alone over-includes everything after
+        // sinceDate, which is wrong the moment anyone runs a historical/backfill
+        // window instead of "last N days ending now".
+        .filter((c) => c.sentAt !== null && c.sentAt >= sinceDate && c.sentAt <= untilDate)
         .sort((a, b) => (b.sentAt ?? "").localeCompare(a.sentAt ?? ""));
 
       const totals = campaigns.reduce(
@@ -147,7 +191,7 @@ export function createMailerLiteMetricsClient(
         { campaigns: 0, recipients: 0, opens: 0, clicks: 0, unsubscribes: 0 },
       );
 
-      return { subscribers, groupName, window: { sinceDate, days }, campaigns, totals };
+      return { subscribers, groupName, window: { sinceDate, untilDate, days }, campaigns, totals };
     },
   };
 }
@@ -206,8 +250,8 @@ export function renderEmailFunnel(m: MailerLiteMetrics): string {
   }
   lines.push("");
   lines.push(
-    "_Opens/clicks shown as count (rate over recipients). Subscribers is the current owned-audience size; " +
-      "campaign stats cover only sends inside the report window._",
+    "_Opens/clicks are unique counts shown as count (rate over recipients, so ≤ 100%). Subscribers is " +
+      "the current owned-audience size; campaign stats cover only sends inside the report window._",
   );
   return lines.join("\n");
 }
