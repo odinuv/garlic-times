@@ -1,0 +1,58 @@
+name: Saturday Special newsletter
+
+# Builds the weekly editor's-picks digest from the week's Mon–Fri editions and
+# emails it to MailerLite subscribers. Email-only — never published on the site.
+# Runs Saturdays 08:00 UTC (after the 06:00 daily run) and on demand.
+
+on:
+  schedule:
+    - cron: "0 8 * * 6" # Saturdays 08:00 UTC
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Saturday date (YYYY-MM-DD); defaults to today UTC"
+        required: false
+      force:
+        description: "Set to 1 to re-send even if already recorded"
+        required: false
+        default: "0"
+
+concurrency:
+  group: saturday-newsletter
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore archive state
+        run: bun run scripts/archive-restore.ts
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
+
+      - name: Build and send the Saturday Special
+        run: bun run scripts/send-newsletter.ts
+        env:
+          NEWSLETTER_DATE: ${{ github.event.inputs.date }}
+          FORCE_SEND: ${{ github.event.inputs.force }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
+          MAILERLITE_API_KEY: ${{ secrets.MAILERLITE_API_KEY }}
+          MAILERLITE_GROUP_ID: ${{ vars.MAILERLITE_GROUP_ID }}
+          MAILERLITE_FROM_NAME: ${{ vars.MAILERLITE_FROM_NAME }}
+          MAILERLITE_FROM_EMAIL: ${{ vars.MAILERLITE_FROM_EMAIL }}
