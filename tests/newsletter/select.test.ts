@@ -70,6 +70,7 @@ test("relaxes one-per-day when a source lacks enough distinct days", () => {
     c("cnn", "Thu", 1, 60),
   ];
   const { picks, fallbacksApplied } = selectPicks(scored, { cnn: 3, fox: 2 });
+  expect(picks).toHaveLength(5);
   expect(picks.filter((p) => p.source === "fox")).toHaveLength(2);
   expect(fallbacksApplied.some((f) => /relaxed/.test(f))).toBe(true);
 });
@@ -98,4 +99,23 @@ test("sends fewer than five when the pool is too small", () => {
 
 test("returns empty for an empty pool", () => {
   expect(selectPicks([], { cnn: 3, fox: 2 }).picks).toEqual([]);
+});
+
+test("fires both relax-day and borrow-source fallbacks in a single run", () => {
+  // fox (minority, quota 2) only on Tue; cnn (quota 3) only on Mon, Wed.
+  // Phase 1: fox takes Tue (1 pick), cnn takes Mon, Wed (2 picks) = 3 picks
+  // Phase 2: fox needs 1 more but only has Tue -> relax, take Tue#2 = 4 picks
+  // Phase 3: cnn needs 1 more but only has 2 distinct articles, no relax available
+  //          -> borrow from remaining (fox Tue#3 or other) = 5 picks
+  const scored: ScoredCandidate[] = [
+    c("fox", "Tue", 1, 95),
+    c("fox", "Tue", 2, 60),
+    c("fox", "Tue", 3, 55),
+    c("cnn", "Mon", 1, 80),
+    c("cnn", "Wed", 1, 70),
+  ];
+  const { picks, fallbacksApplied } = selectPicks(scored, { cnn: 3, fox: 2 });
+  expect(picks).toHaveLength(5);
+  expect(fallbacksApplied.some((f) => /relaxed/.test(f))).toBe(true);
+  expect(fallbacksApplied.some((f) => /borrowed/.test(f))).toBe(true);
 });

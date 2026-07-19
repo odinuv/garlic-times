@@ -19,8 +19,9 @@ export function selectPicks(scored: ScoredCandidate[], quota: Quota): SelectionR
   for (const src of ["cnn", "fox"] as Source[]) bySource[src].sort(byQuality);
 
   const chosen: ScoredCandidate[] = [];
+  const chosenIds = new Set<string>();
   const usedDays = new Set<string>();
-  const isChosen = (c: ScoredCandidate) => chosen.includes(c);
+  const isChosen = (c: ScoredCandidate) => chosenIds.has(c.id);
 
   // Process the minority-quota source first so its best days aren't stolen by
   // the majority source (matches the "Fox first" example on an odd week).
@@ -33,6 +34,7 @@ export function selectPicks(scored: ScoredCandidate[], quota: Quota): SelectionR
       if (need <= 0) break;
       if (usedDays.has(c.date)) continue;
       chosen.push(c);
+      chosenIds.add(c.id);
       usedDays.add(c.date);
       need--;
     }
@@ -41,6 +43,7 @@ export function selectPicks(scored: ScoredCandidate[], quota: Quota): SelectionR
       if (need <= 0) break;
       if (isChosen(c)) continue;
       chosen.push(c);
+      chosenIds.add(c.id);
       need--;
       fallbacksApplied.push(`relaxed one-per-day: took ${c.id} for ${source}`);
     }
@@ -53,6 +56,7 @@ export function selectPicks(scored: ScoredCandidate[], quota: Quota): SelectionR
     for (const c of rest) {
       if (chosen.length >= target) break;
       chosen.push(c);
+      chosenIds.add(c.id);
       fallbacksApplied.push(`borrowed ${c.source} pick ${c.id} to fill quota`);
     }
   }
