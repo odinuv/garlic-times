@@ -1,7 +1,16 @@
 // scripts/generate.ts
 import React from "react";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync } from "node:fs";
-import { join } from "node:path";
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  cpSync,
+  statSync,
+  rmSync,
+} from "node:fs";
+import { join, relative, sep } from "node:path";
 import { imageSize } from "image-size";
 import { parseEdition, type Edition } from "@/edition/schema";
 import { buildFeed } from "@/edition/feed";
@@ -186,10 +195,55 @@ export async function writePages(opts: {
   writeHtml(outDir, ["subscribed"], subscribedDoc);
 }
 
-export function copyAssets(contentDir: string, outDir: string): void {
+/**
+ * Every image file the rendered site actually links to, as content-relative
+ * POSIX paths under `img/` (e.g. `img/2026-07-09/cnn-01-x.jpg`, `img/advert.jpg`).
+ * Article photos and the advert are the only images served from `img/`; the
+ * masthead glyph lives under `static/`, which ships wholesale, so it's not
+ * collected here. Used to keep the download originals (`*-source.jpg`) and
+ * orphaned images from earlier runs out of `dist/` — they stay in `content/`
+ * for the archive but never ship to Cloudflare.
+ */
+export function referencedImages(editions: Edition[]): Set<string> {
+  const keep = new Set<string>();
+  const add = (src: string | undefined) => {
+    if (!src) return;
+    const rel = src.replace(/^\/+/, "");
+    if (rel.startsWith("img/")) keep.add(rel);
+  };
+  for (const edition of editions) {
+    add(edition.advert.src);
+    for (const article of edition.articles) add(article.image?.src);
+  }
+  return keep;
+}
+
+export function copyAssets(
+  contentDir: string,
+  outDir: string,
+  keepImages?: ReadonlySet<string>,
+): void {
   for (const sub of ["img", "static"]) {
     const from = join(contentDir, sub);
-    if (existsSync(from)) cpSync(from, join(outDir, sub), { recursive: true });
+    if (!existsSync(from)) continue;
+    const to = join(outDir, sub);
+    if (sub === "img" && keepImages) {
+      // Copy only images the editions reference; recurse into directories but
+      // drop unreferenced files (download originals, orphans from prior runs).
+      // Clear the destination first so the result is exactly the referenced set
+      // even when a previous build left stale images behind (cpSync only adds).
+      rmSync(to, { recursive: true, force: true });
+      cpSync(from, to, {
+        recursive: true,
+        filter: (srcPath) => {
+          if (statSync(srcPath).isDirectory()) return true;
+          const rel = relative(contentDir, srcPath).split(sep).join("/");
+          return keepImages.has(rel);
+        },
+      });
+    } else {
+      cpSync(from, to, { recursive: true });
+    }
   }
   // Root-level files served from the site root (e.g. /robots.txt, /_headers), not
   // under /static/. `_headers` sets Cloudflare Pages cache rules (see content/_headers).
@@ -230,7 +284,7 @@ export async function build(opts: {
   // can subscribe in any feed reader. Deterministic — derived from the editions.
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, "rss.xml"), buildFeed(editions));
-  copyAssets(contentDir, outDir);
+  copyAssets(contentDir, outDir, referencedImages(editions));
   await compileCss("src/styles.css", join(outDir, "styles.css"));
 }
 
