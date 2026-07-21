@@ -60,6 +60,35 @@ idempotent — a recorded date won't re-send unless `FORCE_SEND=1`).
 Run locally: `bun run send-newsletter` (needs `GEMINI_API_KEY`; sends only when the
 `MAILERLITE_*` vars are set, otherwise builds and prints).
 
+### Weekly analytics: the traffic report
+
+A third scheduled pipeline — **not** part of the daily or newsletter chains — runs
+Mondays 07:00 UTC (`.github/workflows/analytics-report.yml` →
+`scripts/analytics-report.ts`). It reads live analytics only; it never touches
+`content/`, `dist/`, or Gemini. Two data sources, one weekly picture:
+
+- **Web acquisition** — Cloudflare zone analytics via the GraphQL Analytics API
+  (cookieless, server-side). The plan caps a query at 1 day wide, so the report
+  queries **each UTC calendar day separately and aggregates** (`dayWindows` +
+  `mergeCounts`). Each zone shows three side-by-side views: _all traffic_ (raw,
+  bot-inflated), _content pages_ (server-side counts filtered to `/`, `/about/`,
+  and dated editions), and _human (RUM)_ (the Web Analytics beacon — real
+  browsers only). The content/human columns degrade to "—" when their dataset is
+  unavailable rather than failing the run.
+- **Email retention (GAR-9)** — the MailerLite email funnel
+  (`src/newsletter/mailerlite-metrics.ts`), appended as a markdown section over
+  the same window. Unlike the web side's per-column degrade, any MailerLite
+  problem (missing key, unknown group, API error) **fails the run** — a partial
+  report that looks fine is worse than a loud failure.
+
+Output goes to the run's job summary and, when Azure is configured, is persisted
+to the analytics Blob container (per-run raw JSON + markdown keyed by until-date,
+plus a rolling `traffic-log.md`); nothing is committed back to the repo. Run
+locally: `bun run scripts/analytics-report.ts` (needs `CLOUDFLARE_API_TOKEN` /
+`CLOUDFLARE_ACCOUNT_ID`, and `MAILERLITE_API_KEY` for the email section; optional
+`DAYS`, `ZONES`). The client-side beacon that populates the RUM/referrer numbers
+is gated on `CF_BEACON_TOKEN` at generate time — see `docs/analytics.md`.
+
 ### Key conventions
 
 - **Path alias**: `@/*` → `./src/*` (see `tsconfig.json`). Import as `@/ingest/...`, `@/pipeline/...`, `@/edition/...`.
@@ -74,4 +103,5 @@ Run locally: `bun run send-newsletter` (needs `GEMINI_API_KEY`; sends only when 
 
 ## Notes
 
+- Longer-form docs live in `docs/`: `docs/ingest-pipeline.md` (the ingest stages in detail) and `docs/analytics.md` (traffic measurement, the Cloudflare beacon, and activating RUM).
 - ESLint config and `components.json` carry vestigial TanStack Start / shadcn scaffolding from the initial Lovable template; the shipping app is the static generator described above and does not run TanStack at runtime.
