@@ -20,7 +20,7 @@ export async function checkLiveSite(opts: {
       if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
       return res.text();
     });
-  const attempts = opts.attempts ?? 5;
+  const attempts = opts.attempts ?? 10;
   const delayMs = opts.delayMs ?? 10_000;
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const target = `${opts.baseUrl.replace(/\/$/, "")}/${opts.date}/`;
