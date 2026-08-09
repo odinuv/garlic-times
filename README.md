@@ -1,5 +1,7 @@
 # The Garlic Times
 
+**The reasoning and process behind this is described in a [separate article](https://medium.com/codetodeploy/the-anatomy-of-a-fake-news-site-8275d2c4adbc).**
+
 A fictional broadsheet rendered for the modern web in the style of the great London papers of 1930–1970. Every edition is set in black and white and regenerated daily.
 
 Under the hood it's a static-site generator: it pulls real CNN and Fox headlines, rewrites them through Google Gemini (swapping words for _garlic_), lays the results out as a period front page, and renders plain HTML. There is no runtime server — the build output is a folder of static files.
